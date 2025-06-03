@@ -15,6 +15,9 @@ Text Sentiment Analysis Chat Application - for DA225o Deep Learning Course at II
 ### Project Details
 Potential Dataset - [Kaggle Data Set](https://www.kaggle.com/datasets/parulpandey/emotion-dataset?select=training.csv)
 
+##### Prototype-1 of Web GUI
+![Chat application with sentiment analysis](/images/prototype-1.png)
+
 ### Task Distribution
 - *Web GUI*: Ishwer
 - *Data Preparation*: Manish, Shubham
