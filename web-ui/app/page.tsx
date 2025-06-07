@@ -7,13 +7,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useRef, useState } from "react"
 import SentimentSidebar from "./sentiment"
 import { ChatMessage } from "@/hooks/use-realtime-chat"
+import AIResponseSuggestions from "./ai-response-suggestions"
 
 export default function Page() {
   const [username, setUsername] = useState("")
   const [roomName, setRoomName] = useState("general")
   const [hasJoined, setHasJoined] = useState(false)
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [showSidebar, setShowSidebar] = useState(true);
+  const [sentiments, setSentiments] = useState({
+    positive: 0,
+    negative: 0,
+    neutral: 0,
+    excited: 0,
+    sad: 0,
+    angry: 0
+  });
   const messagesRef = useRef([]);
 
   const handleJoinChat = (e: React.FormEvent) => {
@@ -31,6 +40,13 @@ export default function Page() {
       setMessages(updatedMessages);
       console.log("Messages updated:", updatedMessages.length);
     }
+  };
+
+  // Function to send message (you'll need to implement this with your chat logic)
+  const handleSendMessage = (message:any) => {
+    // Send message through your RealtimeChat component
+    console.log('Sending message:', message);
+    // You'll need to call your actual send message function here
   };
 
   if (!hasJoined) {
@@ -123,15 +139,25 @@ export default function Page() {
       </header>
       
       <div className="flex-1 flex overflow-hidden">
-        <main className="flex-1 overflow-hidden">
-          <RealtimeChat
-            roomName={roomName}
-            username={username}
-            onMessage={handleMessageUpdate}
+        <main className="flex-1 flex flex-col overflow-hidden">
+          {/* Chat messages area */}
+          <div className="flex-1 overflow-hidden">
+            <RealtimeChat
+              roomName={roomName}
+              username={username}
+              onMessage={handleMessageUpdate}
+            />
+          </div>
+          
+          {/* AI Suggestions - positioned above the message input */}
+          <AIResponseSuggestions
+            messages={messages}
+            sentiments={sentiments}
+            onSendMessage={handleSendMessage}
           />
         </main>
         
-        {/* Sentiment Sidebar with animation */}
+        {/* Sentiment Sidebar */}
         <div
           className={`transition-all duration-300 ease-in-out ${
             showSidebar ? 'w-80' : 'w-0'
@@ -141,6 +167,7 @@ export default function Page() {
             <SentimentSidebar
               chatId={roomName}
               messages={messages}
+              onSentimentsUpdate={(newSentiments) => setSentiments(newSentiments)}
             />
           )}
         </div>

@@ -30,6 +30,7 @@ interface SentimentConfig {
 interface SentimentSidebarProps {
   chatId: string;
   messages?: ChatMessage[];
+  onSentimentsUpdate: (sentiments:SentimentValues) => void;
 }
 
 interface ProgressBarProps {
@@ -94,7 +95,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ value, sentimentKey, sentimen
   );
 };
 
-const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages = [] }) => {
+const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages = [], onSentimentsUpdate}) => {
   const [sentiments, setSentiments] = useState<SentimentValues>({
     positive: 0,
     negative: 0,
@@ -160,7 +161,7 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages = 
 
       const requestBody: AnalyzeSentimentRequest = {
         chatId: chatId,
-        messages: messages,
+        messages: messages || [],
         timestamp: new Date().toISOString()
       };
 
@@ -180,6 +181,7 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages = 
       
       // Animate the progress bars
       setTimeout(() => {
+        onSentimentsUpdate(data.sentiments);
         setSentiments(data.sentiments);
         lastAnalyzedCountRef.current = messages.length;
       }, 100);
