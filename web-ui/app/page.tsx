@@ -4,7 +4,7 @@ import type React from "react"
 
 import { RealtimeChat } from "@/components/realtime-chat"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import SentimentSidebar from "./sentiment"
 import { ChatMessage } from "@/hooks/use-realtime-chat"
 
@@ -12,8 +12,9 @@ export default function Page() {
   const [username, setUsername] = useState("")
   const [roomName, setRoomName] = useState("general")
   const [hasJoined, setHasJoined] = useState(false)
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState([]);
   const [showSidebar, setShowSidebar] = useState(true);
+  const messagesRef = useRef([]);
 
   const handleJoinChat = (e: React.FormEvent) => {
     e.preventDefault()
@@ -21,6 +22,16 @@ export default function Page() {
       setHasJoined(true)
     }
   }
+
+  // Only update messages if they actually changed
+  const handleMessageUpdate = (updatedMessages:any) => {
+    const hasChanged = JSON.stringify(messagesRef.current) !== JSON.stringify(updatedMessages);
+    if (hasChanged) {
+      messagesRef.current = updatedMessages;
+      setMessages(updatedMessages);
+      console.log("Messages updated:", updatedMessages.length);
+    }
+  };
 
   if (!hasJoined) {
     return (
@@ -116,13 +127,7 @@ export default function Page() {
           <RealtimeChat
             roomName={roomName}
             username={username}
-            onMessage={(updatedMessages) => {
-              // Update messages state for sentiment analysis
-              setMessages(updatedMessages);
-              
-              // You can add database persistence here
-              console.log("Messages updated:", updatedMessages.length);
-            }}
+            onMessage={handleMessageUpdate}
           />
         </main>
         

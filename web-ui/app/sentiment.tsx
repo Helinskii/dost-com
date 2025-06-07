@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { BarChart3, Brain, TrendingUp, Smile, Frown, Meh, Zap, CloudRain, Flame, LucideIcon } from 'lucide-react';
 
 // Type definitions
@@ -35,6 +35,7 @@ interface SentimentSidebarProps {
 interface ProgressBarProps {
   value: number;
   sentimentKey: keyof SentimentValues;
+  sentimentConfig: Record<keyof SentimentValues, SentimentConfig>;
 }
 
 interface AnalyzeSentimentRequest {
@@ -53,6 +54,46 @@ interface AnalyzeSentimentResponse {
   };
 }
 
+const ProgressBar: React.FC<ProgressBarProps> = ({ value, sentimentKey, sentimentConfig }) => {
+  const config = sentimentConfig[sentimentKey];
+  const Icon = config.icon;
+  
+  return (
+    <div className="mb-6 last:mb-0">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <div className={`p-2 rounded-lg ${config.bgColor}`}>
+            <Icon 
+              size={18} 
+              style={{ color: config.color }}
+              className="transition-all duration-300"
+            />
+          </div>
+          <span className="font-medium text-gray-700 dark:text-gray-200">
+            {config.label}
+          </span>
+        </div>
+        <span className="text-sm font-semibold" style={{ color: config.color }}>
+          {value}%
+        </span>
+      </div>
+      
+      <div className="relative h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+        <div
+          className="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out"
+          style={{
+            width: `${value}%`,
+            background: `linear-gradient(90deg, #EF4444 0%, #F59E0B 25%, #FCD34D 50%, #84CC16 75%, #10B981 100%)`,
+            opacity: 0.9
+          }}
+        >
+          <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages = [] }) => {
   const [sentiments, setSentiments] = useState<SentimentValues>({
     positive: 0,
@@ -64,6 +105,8 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages = 
   });
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const isAnalyzingRef = useRef<boolean>(false);
+  const lastAnalyzedCountRef = useRef<number>(0);
 
   // Sentiment configuration with colors and icons
   const sentimentConfig: Record<keyof SentimentValues, SentimentConfig> = {
@@ -106,8 +149,12 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages = 
   };
 
   // Fetch sentiment analysis from API
-  const analyzeSentiments = async (): Promise<void> => {
+  const analyzeSentiments = useCallback(async (): Promise<void> => {
+    // Prevent concurrent calls
+    if (isAnalyzingRef.current) return;
+    
     try {
+      isAnalyzingRef.current = true;
       setLoading(true);
       setError(null);
 
@@ -134,6 +181,7 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages = 
       // Animate the progress bars
       setTimeout(() => {
         setSentiments(data.sentiments);
+        lastAnalyzedCountRef.current = messages.length;
       }, 100);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
@@ -149,52 +197,30 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages = 
       });
     } finally {
       setLoading(false);
+      isAnalyzingRef.current = false;
     }
-  };
-
-  useEffect(() => {
-    analyzeSentiments();
   }, [chatId, messages]);
 
-  const ProgressBar: React.FC<ProgressBarProps> = ({ value, sentimentKey }) => {
-    const config = sentimentConfig[sentimentKey];
-    const Icon = config.icon;
+  // Initial load
+  useEffect(() => {
+    if (chatId) {
+      analyzeSentiments();
+    }
+  }, [chatId, analyzeSentiments]);
+
+  // Update when messages change (with debouncing)
+  useEffect(() => {
+    if (!chatId || messages.length === 0) return;
     
-    return (
-      <div className="mb-6 last:mb-0">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <div className={`p-2 rounded-lg ${config.bgColor}`}>
-              <Icon 
-                size={18} 
-                style={{ color: config.color }}
-                className="transition-all duration-300"
-              />
-            </div>
-            <span className="font-medium text-gray-700 dark:text-gray-200">
-              {config.label}
-            </span>
-          </div>
-          <span className="text-sm font-semibold" style={{ color: config.color }}>
-            {value}%
-          </span>
-        </div>
-        
-        <div className="relative h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-          <div
-            className="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out"
-            style={{
-              width: `${value}%`,
-              background: `linear-gradient(90deg, #EF4444 0%, #F59E0B 25%, #FCD34D 50%, #84CC16 75%, #10B981 100%)`,
-              opacity: 0.9
-            }}
-          >
-            <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
-          </div>
-        </div>
-      </div>
-    );
-  };
+    // Skip if message count hasn't changed
+    if (messages.length === lastAnalyzedCountRef.current) return;
+
+    const timeoutId = setTimeout(() => {
+      analyzeSentiments();
+    }, 1000);
+
+    return () => clearTimeout(timeoutId);
+  }, [messages.length, chatId, analyzeSentiments]);
 
   return (
     <div className="w-80 h-full bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 shadow-lg">
@@ -233,7 +259,12 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages = 
         {!loading && !error && (
           <div className="space-y-1">
             {(Object.entries(sentiments) as Array<[keyof SentimentValues, number]>).map(([key, value]) => (
-              <ProgressBar key={key} value={value} sentimentKey={key} />
+              <ProgressBar 
+                key={key} 
+                value={value} 
+                sentimentKey={key} 
+                sentimentConfig={sentimentConfig}
+              />
             ))}
           </div>
         )}
@@ -258,7 +289,7 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages = 
           
           <button
             onClick={analyzeSentiments}
-            disabled={loading}
+            disabled={loading || isAnalyzingRef.current}
             className="mt-4 w-full py-2 px-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-medium hover:from-purple-600 hover:to-pink-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             <TrendingUp size={16} />
