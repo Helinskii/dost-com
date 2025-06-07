@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { BarChart3, Brain, TrendingUp, Smile, Frown, Meh, Zap, CloudRain, Flame, LucideIcon } from 'lucide-react';
 
 // Type definitions
-interface Message {
+export interface ChatMessage {
   id: string;
   content: string;
-  timestamp: string;
-  userId: string;
+  user: {
+    name: string;
+  };
+  createdAt: string;
 }
 
 interface SentimentValues {
@@ -27,7 +29,7 @@ interface SentimentConfig {
 
 interface SentimentSidebarProps {
   chatId: string;
-  messages?: Message[];
+  messages?: ChatMessage[];
 }
 
 interface ProgressBarProps {
@@ -37,7 +39,7 @@ interface ProgressBarProps {
 
 interface AnalyzeSentimentRequest {
   chatId: string;
-  messages: Message[];
+  messages: ChatMessage[];
   timestamp: string;
 }
 

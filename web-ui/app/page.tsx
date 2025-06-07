@@ -5,11 +5,15 @@ import type React from "react"
 import { RealtimeChat } from "@/components/realtime-chat"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useState } from "react"
+import SentimentSidebar from "./sentiment"
+import { ChatMessage } from "@/hooks/use-realtime-chat"
 
 export default function Page() {
   const [username, setUsername] = useState("")
   const [roomName, setRoomName] = useState("general")
   const [hasJoined, setHasJoined] = useState(false)
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [showSidebar, setShowSidebar] = useState(true);
 
   const handleJoinChat = (e: React.FormEvent) => {
     e.preventDefault()
@@ -75,25 +79,67 @@ export default function Page() {
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold">Chat Room: {roomName}</h1>
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowSidebar(!showSidebar)}
+              className="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-2"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
+              </svg>
+              {showSidebar ? 'Hide' : 'Show'} Sentiment Analysis
+            </button>
             <span className="text-sm text-gray-600">
               Logged in as: <strong>{username}</strong>
             </span>
-            <button onClick={() => setHasJoined(false)} className="text-sm text-blue-600 hover:text-blue-800">
+            <button 
+              onClick={() => setHasJoined(false)} 
+              className="text-sm text-blue-600 hover:text-blue-800"
+            >
               Leave Room
             </button>
           </div>
         </div>
       </header>
-      <main className="flex-1 overflow-hidden">
-        <RealtimeChat
-          roomName={roomName}
-          username={username}
-          onMessage={(messages) => {
-            // You can add database persistence here
-            console.log("Messages updated:", messages.length)
-          }}
-        />
-      </main>
+      
+      <div className="flex-1 flex overflow-hidden">
+        <main className="flex-1 overflow-hidden">
+          <RealtimeChat
+            roomName={roomName}
+            username={username}
+            onMessage={(updatedMessages) => {
+              // Update messages state for sentiment analysis
+              setMessages(updatedMessages);
+              
+              // You can add database persistence here
+              console.log("Messages updated:", updatedMessages.length);
+            }}
+          />
+        </main>
+        
+        {/* Sentiment Sidebar with animation */}
+        <div
+          className={`transition-all duration-300 ease-in-out ${
+            showSidebar ? 'w-80' : 'w-0'
+          } overflow-hidden`}
+        >
+          {showSidebar && (
+            <SentimentSidebar
+              chatId={roomName}
+              messages={messages}
+            />
+          )}
+        </div>
+      </div>
     </div>
-  )
+  );
 }
