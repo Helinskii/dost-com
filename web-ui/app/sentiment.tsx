@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { BarChart3, Brain, TrendingUp, Smile, Frown, Meh, Zap, CloudRain, Flame, LucideIcon } from 'lucide-react';
+import { BarChart3, Brain, TrendingUp, Smile, Frown, Meh, Zap, CloudRain, Flame, LucideIcon, MessageCircle } from 'lucide-react';
 
 // Type definitions
 export interface ChatMessage {
@@ -203,13 +203,6 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages = 
     }
   }, [chatId, messages]);
 
-  // Initial load
-  useEffect(() => {
-    if (chatId) {
-      analyzeSentiments();
-    }
-  }, [chatId, analyzeSentiments]);
-
   // Update when messages change (with debouncing)
   useEffect(() => {
     if (!chatId || messages.length === 0) return;
@@ -223,6 +216,42 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages = 
 
     return () => clearTimeout(timeoutId);
   }, [messages.length, chatId, analyzeSentiments]);
+
+  if (messages.length === 0) {
+    return (
+      <>
+        <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+            <MessageCircle className="w-8 h-8 text-blue-600" />
+          </div>
+          
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No Messages Yet</h3>
+          
+          <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+            Start analyzing sentiment by sending your first message. Our AI will automatically 
+            detect emotions and provide insights on the overall tone of your conversations.
+          </p>
+
+          <div className="space-y-3 w-full">
+            <div className="flex items-center space-x-3 text-sm text-gray-500">
+              <BarChart3 className="w-4 h-4" />
+              <span>Real-time sentiment tracking</span>
+            </div>
+            <div className="flex items-center space-x-3 text-sm text-gray-500">
+              <TrendingUp className="w-4 h-4" />
+              <span>Emotional trend analysis</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-8 p-4 bg-blue-50 rounded-lg">
+          <p className="text-xs text-blue-700">
+            <strong>Tip:</strong> Sentiment analysis works best with complete sentences and natural language.
+          </p>
+        </div>
+      </>
+    );
+  }
 
   return (
     <div className="w-80 h-full bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 shadow-lg">
