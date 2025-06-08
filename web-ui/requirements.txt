@@ -1,2 +1,45 @@
 google-generativeai==0.8.3
-python-dotenv==1.0.1
+
+# Core HTTP client for async requests
+aiohttp>=3.8.0,<4.0.0
+
+# HTTP client with additional features (alternative/backup)
+httpx>=0.24.0,<1.0.0
+
+# Async support (usually included in Python 3.7+, but good to be explicit)
+asyncio-mqtt>=0.13.0  # Optional: if you need MQTT support
+
+# JSON handling (built-in to Python, but listing for completeness)
+# json - built-in module
+
+# Date/time handling (built-in to Python)
+# datetime - built-in module
+
+# Type hints support (Python 3.5+)
+typing-extensions>=4.0.0
+
+# Optional: For enhanced async capabilities
+aiofiles>=23.0.0
+
+# Optional: For better error handling and logging
+structlog>=23.0.0
+
+# Optional: For configuration management
+pydantic>=2.0.0,<3.0.0
+
+# Optional: For environment variable management
+python-dotenv>=1.0.0
+
+# Optional: For testing
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+pytest-mock>=3.10.0
+
+# Optional: For development and linting
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.0.0
+
+# Optional: For production deployment
+uvicorn>=0.20.0  # If using FastAPI
+gunicorn>=20.1.0  # For production WSGI server
