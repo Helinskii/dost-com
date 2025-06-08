@@ -239,7 +239,7 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
                       <button
                         onClick={() => handleSend(suggestion)}
                         className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all bg-gradient-to-r ${
-                          "bg-blue-50 dark:bg-blue-900/20" // config.color
+                          "from-blue-500 to-indigo-600" // config.color
                         } text-white hover:shadow-md active:scale-95`}
                       >
                         <Send className="w-3.5 h-3.5" />
