@@ -178,7 +178,8 @@ class GeminiProvider(BaseProvider):
     def __init__(self, config: Dict[str, Any]):
         super().__init__(config)
         self.base_url = config.get('base_url', 'https://generativelanguage.googleapis.com/v1beta')
-        self.model = config.get('model', 'gemini-pro')
+        # Use the correct model name for Gemini API
+        self.model = config.get('model', 'gemini-1.5-flash')
     
     async def generate_suggestions(
         self, 
@@ -209,14 +210,33 @@ class GeminiProvider(BaseProvider):
         if not self.session:
             self.session = aiohttp.ClientSession()
         
-        async with self.session.post(url, headers=headers, params=params, json=payload) as response:
-            if not response.ok:
-                raise Exception(f"Gemini API error: {response.status} {await response.text()}")
-            
-            data = await response.json()
-            generated_text = data.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', '')
-            
-            return self.parse_responses(generated_text, max_responses)
+        try:
+            async with self.session.post(url, headers=headers, params=params, json=payload) as response:
+                if not response.ok:
+                    error_text = await response.text()
+                    raise Exception(f"Gemini API error: {response.status} {error_text}")
+                
+                data = await response.json()
+                
+                # Check if we got a valid response
+                if 'candidates' not in data or not data['candidates']:
+                    raise Exception("No candidates returned from Gemini API")
+                
+                candidate = data['candidates'][0]
+                if 'content' not in candidate or 'parts' not in candidate['content']:
+                    raise Exception("Invalid response structure from Gemini API")
+                
+                generated_text = candidate['content']['parts'][0].get('text', '')
+                
+                if not generated_text:
+                    raise Exception("Empty response from Gemini API")
+                
+                return self.parse_responses(generated_text, max_responses)
+                
+        except aiohttp.ClientError as e:
+            raise Exception(f"HTTP error when calling Gemini API: {e}")
+        except Exception as e:
+            raise Exception(f"Error processing Gemini API response: {e}")
 
 
 # Configuration utilities
@@ -259,7 +279,7 @@ def create_service_from_env(
     if os.getenv('GEMINI_API_KEY'):
         config['gemini'] = {
             'api_key': os.getenv('GEMINI_API_KEY'),
-            'model': os.getenv('GEMINI_MODEL', 'gemini-pro')
+            'model': os.getenv('GEMINI_MODEL', 'gemini-1.5-flash')
         }
     
     return ChatResponseService(config)
