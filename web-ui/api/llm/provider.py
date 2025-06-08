@@ -1,3 +1,8 @@
+"""
+Chat Response Suggestion Service
+Supports multiple AI models including Gemini API
+"""
+
 import json
 import asyncio
 import aiohttp
@@ -6,14 +11,19 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 
+# Optional: Load from .env file if python-dotenv is installed
 try:
     from dotenv import load_dotenv
-    load_dotenv()
+    # Load from .env.local by default, fallback to .env if not found
+    load_dotenv('.env.local')
+    load_dotenv('.env')  # This won't override existing variables
 except ImportError:
     pass
 
 
 class ChatResponseService:
+    """Main service class for generating chat response suggestions"""
+    
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         self.providers = {}
         config = config or {}  # Handle None case
@@ -209,14 +219,42 @@ class GeminiProvider(BaseProvider):
             return self.parse_responses(generated_text, max_responses)
 
 
-def create_service_from_env(default_provider: str = 'gemini') -> ChatResponseService:
+# Configuration utilities
+def load_env_config(env_file: Optional[str] = None):
+    """Load environment variables from specified file or default locations"""
+    try:
+        from dotenv import load_dotenv
+        
+        if env_file:
+            # Load specific file
+            load_dotenv(env_file)
+        else:
+            # Load in priority order: .env.local -> .env.development -> .env
+            env_files = ['.env.local', '.env.development', '.env']
+            for file in env_files:
+                if os.path.exists(file):
+                    load_dotenv(file)
+                    print(f"Loaded environment from: {file}")
+                    break
+    except ImportError:
+        print("python-dotenv not installed. Using system environment variables only.")
+
+
+# Utility function to create service with environment variables
+def create_service_from_env(
+    default_provider: str = 'gemini', 
+    env_file: Optional[str] = None
+) -> ChatResponseService:
     """Create ChatResponseService using environment variables for API keys"""
+    
+    # Load environment variables from specified file
+    load_env_config(env_file)
+    
     config = {
         'default_provider': default_provider,
         'max_responses': int(os.getenv('MAX_RESPONSES', '3'))
     }
     
-    print(os.getenv('GEMINI_API_KEY'))
     # Add Gemini config if API key is available
     if os.getenv('GEMINI_API_KEY'):
         config['gemini'] = {
@@ -227,16 +265,24 @@ def create_service_from_env(default_provider: str = 'gemini') -> ChatResponseSer
     return ChatResponseService(config)
 
 
+# Usage Example and Testing
 async def main():
     """Example usage of the ChatResponseService"""
     
-    # Using environment variables (Recommended)
+    # Using .env.local specifically
     try:
-        service = create_service_from_env('gemini')
-        print("Service created successfully using environment variables!")
+        service = create_service_from_env('gemini', '.env.local')
+        print("Service created successfully using .env.local!")
     except Exception as e:
-        print(f"Failed to create service from env: {e}")
-        return
+        print(f"Failed to create service from .env.local: {e}")
+        
+        # Fallback: Try default environment loading
+        try:
+            service = create_service_from_env('gemini')
+            print("Service created using default environment loading!")
+        except Exception as e2:
+            print(f"Failed to create service: {e2}")
+            return
     
     # Sample data
     chat_history = {
@@ -266,17 +312,10 @@ async def main():
     }
     
     try:
+        # Generate suggestions using default provider (Gemini)
         suggestions = await service.generate_suggestions(chat_history, sentiment)
         print("Gemini suggestions:")
         print(json.dumps(suggestions, indent=2))
-        
-        openai_suggestions = await service.generate_suggestions(
-            chat_history, 
-            sentiment, 
-            {'provider': 'openai', 'max_responses': 2}
-        )
-        print("\nOpenAI suggestions:")
-        print(json.dumps(openai_suggestions, indent=2))
         
     except Exception as e:
         print(f"Error: {e}")
@@ -288,7 +327,10 @@ async def main():
                 await provider.session.close()
 
 
-class SyncChatResponseService:    
+# Synchronous wrapper for easier integration
+class SyncChatResponseService:
+    """Synchronous wrapper for the async ChatResponseService"""
+    
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         self.async_service = ChatResponseService(config)
     
@@ -305,4 +347,5 @@ class SyncChatResponseService:
 
 
 if __name__ == "__main__":
+    # Run the example
     asyncio.run(main())
