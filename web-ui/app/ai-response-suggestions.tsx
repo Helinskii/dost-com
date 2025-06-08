@@ -98,7 +98,7 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
       }
 
       const data = await response.json();
-      setSuggestions(data.suggestions);
+      setSuggestions(data.data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate suggestions');
       // Fallback mock suggestions
