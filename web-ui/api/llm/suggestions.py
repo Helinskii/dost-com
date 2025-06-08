@@ -35,17 +35,22 @@ class BaseProvider(ABC):
             for k, v in sorted(sentiments.items(), key=lambda x: x[1], reverse=True)[:3]
         ])
         
-        return f"""You are a helpful assistant providing response suggestions for a chat application.
+        return f"""You are a supportive assistant suggesting responses for a chat app.
+
+Your mission is to recognize the overall sentiment (0-100) and craft replies that gently soothe tension, foster positivity, and strengthen the relationship—even in challenging moments.
 
 CONTEXT:
 {context}
 
-CURRENT SENTIMENT: {dominant}
+CURRENT SENTIMENT (0-100): {dominant}
 
-Generate 1-3 short, contextually appropriate response suggestions (max 150 characters each).
-Be helpful, engaging, and match the conversation tone.
+Generate 1-3 brief, emotionally intelligent response options (max 150 characters each) that:
+- Acknowledge the speaker's feelings
+- Diffuse negativity with warmth or reassurance
+- Encourage understanding and connection
 
-Provide only the suggestions, one per line, without numbering."""
+Provide only the suggestions, one per line, without numbering.
+"""
 
 
 class GeminiProvider(BaseProvider):
