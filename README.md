@@ -27,7 +27,8 @@ Potential Dataset - [Kaggle Data Set](https://www.kaggle.com/datasets/parulpande
 - *Database*: Yuvasree
 - *Project Report*: Sanket + **ALL**
 
-
+## Potential Scope
+- *Add RAG based context retrieval for entire chat in order to reduce LLM API payload size (tokens)*
 
 ## Vercel Web-UI
 # Open in v0
