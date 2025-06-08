@@ -310,7 +310,23 @@ async def main():
         "messages": [
             {
                 "id": "353fc390-3afe-49a4-a88a-64a32aed0c85",
-                "content": "What's going on?",
+                "content": "I can't believe you did that!",
+                "user": {
+                    "name": "god"
+                },
+                "createdAt": "2025-06-07T11:29:07.095Z"
+            },
+            {
+                "id": "353fc390-3afe-49a4-a88a-64a32aed0c85",
+                "content": "I'm so mad at you right now!",
+                "user": {
+                    "name": "god"
+                },
+                "createdAt": "2025-06-07T11:29:07.095Z"
+            },
+            {
+                "id": "353fc390-3afe-49a4-a88a-64a32aed0c85",
+                "content": "Don't message me anymore!",
                 "user": {
                     "name": "god"
                 },
@@ -322,12 +338,12 @@ async def main():
     
     sentiment = {
         "sentiments": {
-            "positive": 50,
-            "negative": 7,
-            "neutral": 76,
-            "excited": 76,
-            "sad": 32,
-            "angry": 26
+            "positive": 1,
+            "negative": 80,
+            "neutral": 2,
+            "excited": 10,
+            "sad": 50,
+            "angry": 99
         }
     }
     
