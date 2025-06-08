@@ -75,14 +75,20 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
     setError(null);
 
     try {
-      const response = await fetch('/api/generate-responses', {
+      const response = await fetch('/api/llm/suggestions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: messages.slice(-10), // Last 10 messages for context
-          sentiments,
+          chatHistory: {
+            chatId: "",
+            messages: messages.slice(-10), // Last 10 messages for context
+            timestamp: new Date().toISOString()
+          },
+          sentiment: {
+            sentiments,
+          },
           timestamp: new Date().toISOString()
         })
       });
