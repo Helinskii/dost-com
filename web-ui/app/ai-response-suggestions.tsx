@@ -122,13 +122,13 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [messages, sentiments]);
+  }, [sentiments]);
 
   useEffect(() => {
     if (messages.length > 0) {
       fetchSuggestions();
     }
-  }, [messages.length, fetchSuggestions]);
+  }, [fetchSuggestions]);
 
   const handleCopy = async (suggestion: AISuggestion) => {
     try {
