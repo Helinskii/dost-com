@@ -22,8 +22,8 @@ interface SentimentValues {
 interface AISuggestion {
   id: string;
   content: string;
-  tone: 'professional' | 'friendly' | 'empathetic';
-  confidence: number;
+  // tone: 'professional' | 'friendly' | 'empathetic';
+  // confidence: number;
 }
 
 interface AIResponseSuggestionsProps {
@@ -75,14 +75,20 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
     setError(null);
 
     try {
-      const response = await fetch('/api/generate-responses', {
+      const response = await fetch('/api/llm/suggestions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: messages.slice(-10), // Last 10 messages for context
-          sentiments,
+          chatHistory: {
+            chatId: "",
+            messages: messages.slice(-10), // Last 10 messages for context
+            timestamp: new Date().toISOString()
+          },
+          sentiment: {
+            sentiments,
+          },
           timestamp: new Date().toISOString()
         })
       });
@@ -92,28 +98,22 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
       }
 
       const data = await response.json();
-      setSuggestions(data.suggestions);
+      setSuggestions(data.data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate suggestions');
       // Fallback mock suggestions
       setSuggestions([
         {
           id: '1',
-          content: "I understand your concern. Let me help you resolve this issue as quickly as possible.",
-          tone: 'professional',
-          confidence: 0.92
+          content: "I understand your concern. Let me help you resolve this issue as quickly as possible."
         },
         {
           id: '2',
-          content: "Thanks for bringing this up! I'd be happy to help you out with that. 😊",
-          tone: 'friendly',
-          confidence: 0.88
+          content: "Thanks for bringing this up! I'd be happy to help you out with that. 😊"
         },
         {
           id: '3',
-          content: "I can see how that might be frustrating. Let's work together to find a solution that works for you.",
-          tone: 'empathetic',
-          confidence: 0.95
+          content: "I can see how that might be frustrating. Let's work together to find a solution that works for you."
         }
       ]);
     } finally {
@@ -190,7 +190,7 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
           ) : (
             <>
               {suggestions.map((suggestion) => {
-                const config = toneConfig[suggestion.tone];
+                // const config = toneConfig[suggestion.tone];
                 const isSelected = selectedId === suggestion.id;
                 const isCopied = copiedId === suggestion.id;
 
@@ -198,13 +198,16 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
                   <div
                     key={suggestion.id}
                     className={`relative p-4 rounded-lg border transition-all duration-300 ${
-                      config.bgColor
-                    } ${config.borderColor} ${
+                      "bg-blue-50 dark:bg-blue-900/20" //config.bgColor
+                    } ${
+                      "border-blue-200 dark:border-blue-800" //config.borderColor
+                      } 
+                    ${
                       isSelected ? 'scale-[0.98] opacity-70' : 'hover:shadow-md'
                     }`}
                   >
                     {/* Tone Badge */}
-                    <div className="flex items-center justify-between mb-2">
+                    {/* <div className="flex items-center justify-between mb-2">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white bg-gradient-to-r ${config.color}`}
                       >
@@ -213,7 +216,7 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
                       <span className="text-xs text-gray-500 dark:text-gray-400">
                         {Math.round(suggestion.confidence * 100)}% match
                       </span>
-                    </div>
+                    </div> */}
 
                     {/* Content */}
                     <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 leading-relaxed">
@@ -236,7 +239,7 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
                       <button
                         onClick={() => handleSend(suggestion)}
                         className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all bg-gradient-to-r ${
-                          config.color
+                          "from-blue-500 to-indigo-600" // config.color
                         } text-white hover:shadow-md active:scale-95`}
                       >
                         <Send className="w-3.5 h-3.5" />

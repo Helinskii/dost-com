@@ -19,10 +19,19 @@ interface SentimentValues {
   angry: number;
 }
 
-interface GenerateResponsesRequest {
+interface ChatHistory {
+  chatId: string;
   messages: ChatMessage[];
-  sentiments: SentimentValues;
   timestamp: string;
+}
+
+interface Sentiment {
+  sentiments: SentimentValues;
+}
+
+interface GenerateResponsesRequest {
+  chatHistory: ChatHistory;
+  sentiment: Sentiment;
 }
 
 interface AISuggestion {
@@ -41,7 +50,8 @@ interface GenerateResponsesResponse {
 export async function POST(request: NextRequest) {
   try {
     const data: GenerateResponsesRequest = await request.json();
-    const { messages, sentiments } = data;
+    const { messages } = data?.chatHistory || {};
+    const { sentiments } = data?.sentiment || {};
 
     // Analyze sentiment context
     const dominantSentiment = Object.entries(sentiments).reduce((a, b) => 
@@ -52,40 +62,6 @@ export async function POST(request: NextRequest) {
     const recentMessages = messages.slice(-5).map(m => 
       `${m.user.name}: ${m.content}`
     ).join('\n');
-
-    // For production, replace this with actual LLM API call
-    // Example with OpenAI:
-    /*
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content: `Generate 3 different response suggestions for a chat conversation.
-          Current sentiment analysis: ${JSON.stringify(sentiments)}
-          Dominant sentiment: ${dominantSentiment}
-          
-          Generate responses in 3 tones:
-          1. Professional - formal and business-like
-          2. Friendly - warm and approachable
-          3. Empathetic - understanding and supportive
-          
-          Each response should be appropriate for the conversation context and sentiment.
-          Keep responses concise (under 50 words each).
-          Return as JSON array with fields: content, tone`
-        },
-        {
-          role: "user",
-          content: `Recent conversation:\n${recentMessages}\n\nGenerate 3 appropriate responses.`
-        }
-      ],
-      temperature: 0.7,
-    });
-    
-    const suggestions = JSON.parse(completion.choices[0].message.content);
-    */
 
     // Mock responses based on sentiment
     let suggestions: AISuggestion[] = [];
