@@ -153,6 +153,7 @@ export default function Page() {
           <AIResponseSuggestions
             messages={messages}
             sentiments={sentiments}
+            username={username}
             onSendMessage={handleSendMessage}
           />
         </main>

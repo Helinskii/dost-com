@@ -31,9 +31,11 @@ interface AIResponseSuggestionsProps {
   sentiments: SentimentValues;
   onSendMessage: (message: string) => void;
   isExpanded?: boolean;
+  username: string;
 }
 
 const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
+  username,
   messages,
   sentiments,
   onSendMessage,
@@ -81,6 +83,7 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          username,
           chatHistory: {
             chatId: "",
             messages: messages.slice(-10), // Last 10 messages for context

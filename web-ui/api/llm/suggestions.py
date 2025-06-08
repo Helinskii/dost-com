@@ -17,10 +17,10 @@ class BaseProvider(ABC):
             raise ValueError(f"API key required for {self.__class__.__name__}")
     
     @abstractmethod
-    async def generate_suggestions(self, chat_history: Dict, sentiment: Dict, max_responses: int) -> List[str]:
+    async def generate_suggestions(self, username, chat_history: Dict, sentiment: Dict, max_responses: int) -> List[str]:
         pass
     
-    def build_prompt(self, chat_history: Dict, sentiment: Dict) -> str:
+    def build_prompt(self, username, chat_history: Dict, sentiment: Dict) -> str:
         messages = chat_history.get('messages', [])
         recent_messages = messages[-5:]
         
@@ -35,19 +35,25 @@ class BaseProvider(ABC):
             for k, v in sorted(sentiments.items(), key=lambda x: x[1], reverse=True)[:3]
         ])
         
-        return f"""You are a supportive assistant suggesting responses for a chat app.
+        return f"""You are a helpful assistant providing response suggestions for a chat application.
 
-Your mission is to recognize the overall sentiment (0-100) and craft replies that gently soothe tension, foster positivity, and strengthen the relationship—even in challenging moments.
+The current user's name is: {username}
+
+Your task is to generate response suggestions for {username}, based only on messages from other participants in the chat history.  
+Use {username}'s previous messages as context to maintain coherence and avoid repetition, but do not generate responses to their own messages.
+
+CURRENT SENTIMENT (0–100): {dominant}  
+The sentiment reflects the emotional tone of the entire conversation and should be used to guide de-escalation and promote a positive, relationship-preserving response.
 
 CONTEXT:
 {context}
 
-CURRENT SENTIMENT (0-100): {dominant}
-
-Generate 1-3 brief, emotionally intelligent response options (max 150 characters each) that:
-- Acknowledge the speaker's feelings
-- Diffuse negativity with warmth or reassurance
-- Encourage understanding and connection
+Generate 1-3 short response suggestions (max 150 characters each) from {username}'s perspective that:
+- Respond directly and appropriately to other participants' most recent messages
+- De-escalate tension and promote a positive tone
+- Show empathy, understanding, or warmth
+- Help preserve or improve the relationship
+- Make the other person feel heard and better
 
 Provide only the suggestions, one per line, without numbering.
 """
@@ -59,8 +65,8 @@ class GeminiProvider(BaseProvider):
         self.base_url = config.get('base_url', 'https://generativelanguage.googleapis.com/v1beta')
         self.model = config.get('model', 'gemini-2.0-flash')
     
-    async def generate_suggestions(self, chat_history: Dict, sentiment: Dict, max_responses: int = 3) -> List[str]:
-        prompt = self.build_prompt(chat_history, sentiment)
+    async def generate_suggestions(self, username, chat_history: Dict, sentiment: Dict, max_responses: int = 3) -> List[str]:
+        prompt = self.build_prompt(username, chat_history, sentiment)
         
         url = f"{self.base_url}/models/{self.model}:generateContent"
         headers = {'Content-Type': 'application/json'}
@@ -116,7 +122,7 @@ class ChatResponseService:
                 gemini_config['api_key'] = os.getenv('GEMINI_API_KEY')
             self.providers['gemini'] = GeminiProvider(gemini_config)
     
-    async def generate_suggestions(self, chat_history: Dict, sentiment: Dict, options: Optional[Dict] = None) -> List[Dict[str, str]]:
+    async def generate_suggestions(self, username, chat_history: Dict, sentiment: Dict, options: Optional[Dict] = None) -> List[Dict[str, str]]:
         options = options or {}
         provider_name = options.get('provider', self.default_provider)
         max_responses = options.get('maxResponses', self.max_responses)
@@ -125,7 +131,7 @@ class ChatResponseService:
             raise ValueError(f"Provider '{provider_name}' not configured")
         
         provider = self.providers[provider_name]
-        responses = await provider.generate_suggestions(chat_history, sentiment, max_responses)
+        responses = await provider.generate_suggestions(username, chat_history, sentiment, max_responses)
         
         return [
             {"id": str(i + 1), "content": response.strip()}
@@ -170,12 +176,13 @@ class handler(BaseHTTPRequestHandler):
             body = self.rfile.read(content_length).decode('utf-8')
             data = json.loads(body)
             
-            if 'chatHistory' not in data or 'sentiment' not in data:
-                self.send_error_response(400, "Missing chatHistory or sentiment")
+            if 'chatHistory' not in data or 'sentiment' not in data or 'username' not in data:
+                self.send_error_response(400, "Missing chatHistory or sentimen or username")
                 return
             
             service = create_service()
             suggestions = asyncio.run(service.generate_suggestions(
+                data['username'],
                 data['chatHistory'], 
                 data['sentiment'], 
                 data.get('options', {})
@@ -212,3 +219,55 @@ class handler(BaseHTTPRequestHandler):
         
         error_response = {"success": False, "error": message}
         self.wfile.write(json.dumps(error_response).encode())
+
+def test_local():
+    test_data = {
+        "username": "Alice",
+        "chatHistory": {
+            "chatId": "general",
+            "messages": [
+                {
+                    "id": "1",
+                    "content": "I'm feeling a bit overwhelmed with work lately",
+                    "user": {"name": "Alice"},
+                    "createdAt": "2025-06-07T11:29:07.095Z"
+                },
+                {
+                    "id": "2",
+                    "content": "What happened?",
+                    "user": {"name": "John"},
+                    "createdAt": "2025-06-07T11:35:07.095Z"
+                }
+            ],
+            "timestamp": "2025-06-07T11:29:18.624Z"
+        },
+        "sentiment": {
+            "sentiments": {
+                "positive": 20,
+                "negative": 60,
+                "neutral": 30,
+                "excited": 10,
+                "sad": 70,
+                "angry": 15
+            }
+        },
+        "options": {
+            "maxResponses": 3
+        }
+    }
+   
+    # Test the service
+    service = create_service()
+    suggestions = asyncio.run(service.generate_suggestions(
+        test_data['chatHistory'],
+        test_data['sentiment'],
+        test_data['options']
+    ))
+   
+    print("Generated suggestions:")
+    for suggestion in suggestions:
+        print(f"- {suggestion['content']}")
+
+# if __name__ == "__main__":
+    # Sample input data
+    # test_local()
