@@ -15,9 +15,6 @@ Text Sentiment Analysis Chat Application - for DA225o Deep Learning Course at II
 ### Project Details
 Potential Dataset - [Kaggle Data Set](https://www.kaggle.com/datasets/parulpandey/emotion-dataset?select=training.csv)
 
-##### Prototype-1 of Web GUI
-![Chat application with sentiment analysis](/images/prototype-1.png)
-
 ### Task Distribution
 - *Web GUI*: Ishwer
 - *Data Preparation*: Manish, Shubham
@@ -31,6 +28,12 @@ Potential Dataset - [Kaggle Data Set](https://www.kaggle.com/datasets/parulpande
 - *Add RAG based context retrieval for entire chat in order to reduce LLM API payload size (tokens)*
 
 ## Vercel Web-UI
+
+# Link to Application -> [Dost-Com](https://v0-open-in-v0-im.vercel.app/)
+
+##### Prototype-1 of Web GUI
+![Chat application with sentiment analysis](/images/prototype-1.png)
+
 # Open in v0
 
 *Automatically synced with your [v0.dev](https://v0.dev) deployments*
