@@ -136,7 +136,7 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/analyze-sentiment', {
+      const response = await fetch('https://b781-2401-4900-883a-9e4b-bdd0-2a98-c286-c253.ngrok-free.app/predict', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
