@@ -42,27 +42,6 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
   // Use sentiment context
   const { sentimentData, getDominantEmotion, getSentimentTrend, isPositiveSentiment } = useSentiment();
 
-  const toneConfig = {
-    professional: {
-      color: 'from-blue-500 to-indigo-600',
-      label: 'Professional',
-      bgColor: 'bg-blue-50 dark:bg-blue-900/20',
-      borderColor: 'border-blue-200 dark:border-blue-800'
-    },
-    friendly: {
-      color: 'from-emerald-500 to-teal-600',
-      label: 'Friendly',
-      bgColor: 'bg-emerald-50 dark:bg-emerald-900/20',
-      borderColor: 'border-emerald-200 dark:border-emerald-800'
-    },
-    empathetic: {
-      color: 'from-purple-500 to-pink-600',
-      label: 'Empathetic',
-      bgColor: 'bg-purple-50 dark:bg-purple-900/20',
-      borderColor: 'border-purple-200 dark:border-purple-800'
-    }
-  };
-
   const fetchSuggestions = useCallback(async () => {
     if (messages.length === 0) return;
 
@@ -276,30 +255,17 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
           ) : (
             <>
               {suggestions.map((suggestion) => {
-                const config = toneConfig[suggestion.tone];
                 const isSelected = selectedId === suggestion.id;
                 const isCopied = copiedId === suggestion.id;
 
                 return (
                   <div
                     key={suggestion.id}
-                    className={`relative p-4 rounded-lg border transition-all duration-300 ${
-                      config.bgColor
-                    } ${config.borderColor} ${
+                    className={`relative p-4 rounded-lg border transition-all duration-300 bg-blue-50 dark:bg-blue-900/2 
+                      border-blue-200 dark:border-blue-800 ${
                       isSelected ? 'scale-[0.98] opacity-70' : 'hover:shadow-md'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white bg-gradient-to-r ${config.color}`}
-                      >
-                        {config.label}
-                      </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {Math.round(suggestion.confidence * 100)}% match
-                      </span>
-                    </div>
-
                     <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 leading-relaxed">
                       {suggestion.content}
                     </p>
@@ -318,7 +284,7 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
                       </button>
                       <button
                         onClick={() => handleSend(suggestion)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all bg-gradient-to-r ${config.color} text-white hover:shadow-md active:scale-95`}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:shadow-md active:scale-95`}
                       >
                         <Send className="w-3.5 h-3.5" />
                         Send
