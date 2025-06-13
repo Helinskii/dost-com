@@ -8,22 +8,35 @@ import { useRef, useState } from "react"
 import SentimentSidebar from "./sentiment"
 import { ChatMessage } from "@/hooks/use-realtime-chat"
 import AIResponseSuggestions from "./ai-response-suggestions"
+import { SentimentProvider, useSentiment } from "@/hooks/use-sentiment-analysis"
 
-export default function Page() {
+// Main Chat Component (wrapped with context)
+function ChatPage() {
   const [username, setUsername] = useState("")
   const [roomName, setRoomName] = useState("general")
   const [hasJoined, setHasJoined] = useState(false)
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    // {
+    //             "content": "What kind of help do you need?",
+    //             "createdAt": "2025-06-08T13:41:48.184Z",
+    //             "id": "023770cd-4d40-4b58-b63e-4cc4c2a5e83f",
+    //             "user": {
+    //                 "name": "god"
+    //             }
+    //         }
+  ]);
   const [showSidebar, setShowSidebar] = useState(true);
-  const [sentiments, setSentiments] = useState({
-    positive: 0,
-    negative: 0,
-    neutral: 0,
-    excited: 0,
-    sad: 0,
-    angry: 0
-  });
   const messagesRef = useRef([]);
+
+  // Use sentiment context
+  const {
+    sentimentData,
+    updateSentimentFromAPI,
+    addMessageSentiment,
+    getDominantEmotion,
+    getSentimentTrend,
+    isPositiveSentiment
+  } = useSentiment();
 
   const handleJoinChat = (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,21 +45,24 @@ export default function Page() {
     }
   }
 
-  // Only update messages if they actually changed
-  const handleMessageUpdate = (updatedMessages:any) => {
+  // Update messages and sentiment analysis
+  const handleMessageUpdate = (updatedMessages: any) => {
     const hasChanged = JSON.stringify(messagesRef.current) !== JSON.stringify(updatedMessages);
     if (hasChanged) {
       messagesRef.current = updatedMessages;
       setMessages(updatedMessages);
+      
       console.log("Messages updated:", updatedMessages.length);
     }
   };
 
-  // Function to send message (you'll need to implement this with your chat logic)
-  const handleSendMessage = (message:any) => {
-    // Send message through your RealtimeChat component
+  // Send message with sentiment tracking
+  const handleSendMessage = (message: any) => {
     console.log('Sending message:', message);
-    // You'll need to call your actual send message function here
+    // Your actual send message implementation here
+    
+    // Optionally add optimistic sentiment update
+    // addMessageSentiment(generateId(), message, 'unknown');
   };
 
   if (!hasJoined) {
@@ -104,7 +120,17 @@ export default function Page() {
     <div className="h-screen flex flex-col">
       <header className="bg-white border-b border-gray-200 p-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold">Chat Room: {roomName}</h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl font-semibold">Chat Room: {roomName}</h1>
+            {/* Show sentiment indicator in header */}
+            <div className="flex items-center gap-2 text-sm">
+              <span className={`px-2 py-1 rounded-full text-xs ${
+                isPositiveSentiment() ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+              }`}>
+                {getDominantEmotion()} · {getSentimentTrend()}
+              </span>
+            </div>
+          </div>
           <div className="flex items-center gap-4">
             <button
               onClick={() => setShowSidebar(!showSidebar)}
@@ -140,7 +166,6 @@ export default function Page() {
       
       <div className="flex-1 flex overflow-hidden">
         <main className="flex-1 flex flex-col overflow-hidden">
-          {/* Chat messages area */}
           <div className="flex-1 overflow-hidden">
             <RealtimeChat
               roomName={roomName}
@@ -149,16 +174,14 @@ export default function Page() {
             />
           </div>
           
-          {/* AI Suggestions - positioned above the message input */}
+          {/* Pass sentiment context data to AI suggestions */}
           <AIResponseSuggestions
             messages={messages}
-            sentiments={sentiments}
             username={username}
             onSendMessage={handleSendMessage}
           />
         </main>
         
-        {/* Sentiment Sidebar */}
         <div
           className={`transition-all duration-300 ease-in-out ${
             showSidebar ? 'w-80' : 'w-0'
@@ -168,11 +191,19 @@ export default function Page() {
             <SentimentSidebar
               chatId={roomName}
               messages={messages}
-              onSentimentsUpdate={(newSentiments) => setSentiments(newSentiments)}
             />
           )}
         </div>
       </div>
     </div>
+  );
+}
+
+// Export wrapped component
+export default function Page() {
+  return (
+    <SentimentProvider>
+      <ChatPage />
+    </SentimentProvider>
   );
 }

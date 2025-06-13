@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { BarChart3, Brain, TrendingUp, Smile, Frown, Meh, Zap, CloudRain, Flame, LucideIcon, MessageCircle } from 'lucide-react';
+import { BarChart3, Brain, TrendingUp, Smile, Frown, Meh, Zap, CloudRain, Flame, LucideIcon, MessageCircle, Heart } from 'lucide-react';
+import { useSentiment } from "@/hooks/use-sentiment-analysis";
 
 // Type definitions
 export interface ChatMessage {
@@ -11,16 +12,7 @@ export interface ChatMessage {
   createdAt: string;
 }
 
-interface SentimentValues {
-  positive: number;
-  negative: number;
-  neutral: number;
-  excited: number;
-  sad: number;
-  angry: number;
-}
-
-interface SentimentConfig {
+interface EmotionConfig {
   color: string;
   bgColor: string;
   icon: LucideIcon;
@@ -30,33 +22,15 @@ interface SentimentConfig {
 interface SentimentSidebarProps {
   chatId: string;
   messages?: ChatMessage[];
-  onSentimentsUpdate: (sentiments:SentimentValues) => void;
 }
 
 interface ProgressBarProps {
   value: number;
-  sentimentKey: keyof SentimentValues;
-  sentimentConfig: Record<keyof SentimentValues, SentimentConfig>;
+  emotion: string;
+  config: EmotionConfig;
 }
 
-interface AnalyzeSentimentRequest {
-  chatId: string;
-  messages: ChatMessage[];
-  timestamp: string;
-}
-
-interface AnalyzeSentimentResponse {
-  success: boolean;
-  sentiments: SentimentValues;
-  metadata: {
-    totalMessages: number;
-    analyzedAt: string;
-    confidence: number;
-  };
-}
-
-const ProgressBar: React.FC<ProgressBarProps> = ({ value, sentimentKey, sentimentConfig }) => {
-  const config = sentimentConfig[sentimentKey];
+const ProgressBar: React.FC<ProgressBarProps> = ({ value, emotion, config }) => {
   const Icon = config.icon;
   
   return (
@@ -75,7 +49,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ value, sentimentKey, sentimen
           </span>
         </div>
         <span className="text-sm font-semibold" style={{ color: config.color }}>
-          {value}%
+          {Math.round(value * 100)}%
         </span>
       </div>
       
@@ -83,8 +57,8 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ value, sentimentKey, sentimen
         <div
           className="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out"
           style={{
-            width: `${value}%`,
-            background: `linear-gradient(90deg, #EF4444 0%, #F59E0B 25%, #FCD34D 50%, #84CC16 75%, #10B981 100%)`,
+            width: `${value * 100}%`,
+            backgroundColor: config.color,
             opacity: 0.9
           }}
         >
@@ -95,119 +69,136 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ value, sentimentKey, sentimen
   );
 };
 
-const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages = [], onSentimentsUpdate}) => {
-  const [sentiments, setSentiments] = useState<SentimentValues>({
-    positive: 0,
-    negative: 0,
-    neutral: 0,
-    excited: 0,
-    sad: 0,
-    angry: 0
-  });
-  const [loading, setLoading] = useState<boolean>(true);
+const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ 
+  chatId, 
+  messages = []
+}) => {
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const isAnalyzingRef = useRef<boolean>(false);
   const lastAnalyzedCountRef = useRef<number>(0);
 
-  // Sentiment configuration with colors and icons
-  const sentimentConfig: Record<keyof SentimentValues, SentimentConfig> = {
-    positive: {
+  // Use sentiment context
+  const {
+    sentimentData,
+    updateSentimentFromAPI,
+    getDominantEmotion,
+    getSentimentTrend,
+    isPositiveSentiment
+  } = useSentiment();
+
+  // Emotion configuration mapping API emotions to UI
+  const emotionConfig: Record<string, EmotionConfig> = {
+    joy: {
       color: '#10B981',
       bgColor: 'bg-emerald-500/10',
       icon: Smile,
-      label: 'Positive'
+      label: 'Joy'
     },
-    negative: {
+    sadness: {
+      color: '#3B82F6',
+      bgColor: 'bg-blue-500/10',
+      icon: CloudRain,
+      label: 'Sadness'
+    },
+    anger: {
       color: '#EF4444',
       bgColor: 'bg-red-500/10',
-      icon: Frown,
-      label: 'Negative'
+      icon: Flame,
+      label: 'Anger'
     },
-    neutral: {
+    fear: {
+      color: '#8B5CF6',
+      bgColor: 'bg-purple-500/10',
+      icon: Frown,
+      label: 'Fear'
+    },
+    love: {
+      color: '#EC4899',
+      bgColor: 'bg-pink-500/10',
+      icon: Heart,
+      label: 'Love'
+    },
+    unknown: {
       color: '#6B7280',
       bgColor: 'bg-gray-500/10',
       icon: Meh,
       label: 'Neutral'
-    },
-    excited: {
-      color: '#F59E0B',
-      bgColor: 'bg-amber-500/10',
-      icon: Zap,
-      label: 'Excited'
-    },
-    sad: {
-      color: '#3B82F6',
-      bgColor: 'bg-blue-500/10',
-      icon: CloudRain,
-      label: 'Sad'
-    },
-    angry: {
-      color: '#DC2626',
-      bgColor: 'bg-red-600/10',
-      icon: Flame,
-      label: 'Angry'
     }
   };
 
-  // Fetch sentiment analysis from API
+  // Analyze sentiments via API
   const analyzeSentiments = useCallback(async (): Promise<void> => {
-    // Prevent concurrent calls
-    if (isAnalyzingRef.current) return;
+    if (isAnalyzingRef.current || messages.length === 0) return;
     
     try {
       isAnalyzingRef.current = true;
       setLoading(true);
       setError(null);
 
-      const requestBody: AnalyzeSentimentRequest = {
-        chatId: chatId,
-        messages: messages || [],
-        timestamp: new Date().toISOString()
-      };
-
       const response = await fetch('/api/analyze-sentiment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify({
+          chatId: chatId,
+          messages: messages.map(msg => ({
+            id: msg.id,
+            content: msg.content,
+            user: msg.user.name
+          })),
+          timestamp: new Date().toISOString()
+        })
       });
 
       if (!response.ok) {
         throw new Error('Failed to analyze sentiments');
       }
 
-      const data: AnalyzeSentimentResponse = await response.json();
+      const data = await response.json();
+
+//       const data = {
+//   success: true,
+//   emotion_last_message: "joy",
+//   emotional_scores: {
+//     sadness: 0.15,
+//     joy: 0.35,
+//     love: 0.20,
+//     anger: 0.10,
+//     fear: 0.05,
+//     unknown: 0.15
+//   },
+//   emotion_per_text: [
+//     { "Hey there!": "joy" },
+//     { "How are you doing?": "unknown" },
+//     { "I'm excited about this project": "joy" },
+//     { "That's concerning": "fear" },
+//     { "Thanks for your help": "love" }
+//   ],
+//   metadata: {
+//     totalMessages: 5,
+//     analyzedAt: new Date().toISOString(),
+//     confidence: 0.87
+//   }
+// };
       
-      // Animate the progress bars
-      setTimeout(() => {
-        onSentimentsUpdate(data.sentiments);
-        setSentiments(data.sentiments);
-        lastAnalyzedCountRef.current = messages.length;
-      }, 100);
+      // Update context with API response
+      updateSentimentFromAPI(data);
+      lastAnalyzedCountRef.current = messages.length;
+
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
-      // Set demo values if API fails
-      setSentiments({
-        positive: 75,
-        negative: 15,
-        neutral: 45,
-        excited: 60,
-        sad: 20,
-        angry: 10
-      });
     } finally {
       setLoading(false);
       isAnalyzingRef.current = false;
     }
-  }, [chatId, messages]);
+  }, [chatId, messages, updateSentimentFromAPI]);
 
-  // Update when messages change (with debouncing)
+  // Auto-analyze when messages change
   useEffect(() => {
     if (!chatId || messages.length === 0) return;
-    
-    // Skip if message count hasn't changed
     if (messages.length === lastAnalyzedCountRef.current) return;
 
     const timeoutId = setTimeout(() => {
@@ -219,8 +210,8 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages = 
 
   if (messages.length === 0) {
     return (
-      <>
-        <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
+      <div className="w-80 h-full bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 shadow-lg">
+        <div className="p-6 flex-1 flex flex-col items-center justify-center text-center">
           <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
             <MessageCircle className="w-8 h-8 text-blue-600" />
           </div>
@@ -229,7 +220,7 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages = 
           
           <p className="text-sm text-gray-600 mb-6 leading-relaxed">
             Start analyzing sentiment by sending your first message. Our AI will automatically 
-            detect emotions and provide insights on the overall tone of your conversations.
+            detect emotions and provide insights.
           </p>
 
           <div className="space-y-3 w-full">
@@ -242,14 +233,14 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages = 
               <span>Emotional trend analysis</span>
             </div>
           </div>
-        </div>
 
-        <div className="mt-8 p-4 bg-blue-50 rounded-lg">
-          <p className="text-xs text-blue-700">
-            <strong>Tip:</strong> Sentiment analysis works best with complete sentences and natural language.
-          </p>
+          <div className="mt-8 p-4 bg-blue-50 rounded-lg">
+            <p className="text-xs text-blue-700">
+              <strong>Tip:</strong> Sentiment analysis works best with complete sentences.
+            </p>
+          </div>
         </div>
-      </>
+      </div>
     );
   }
 
@@ -265,14 +256,28 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages = 
               Sentiment Analysis
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Real-time chat emotions
+              {getDominantEmotion()} · {getSentimentTrend()}
             </p>
+          </div>
+        </div>
+
+        {/* Overall sentiment indicator */}
+        <div className="mb-6 p-4 rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Last Message Emotion
+            </span>
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+              isPositiveSentiment() ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+            }`}>
+              {sentimentData.overallSentiment.emotion_last_message || 'unknown'}
+            </span>
           </div>
         </div>
 
         {loading && (
           <div className="space-y-6">
-            {(Object.keys(sentimentConfig) as Array<keyof SentimentValues>).map((key) => (
+            {Object.keys(emotionConfig).map((key) => (
               <div key={key} className="animate-pulse">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
@@ -289,22 +294,52 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages = 
 
         {!loading && !error && (
           <div className="space-y-1">
-            {(Object.entries(sentiments) as Array<[keyof SentimentValues, number]>).map(([key, value]) => (
-              <ProgressBar 
-                key={key} 
-                value={value} 
-                sentimentKey={key} 
-                sentimentConfig={sentimentConfig}
-              />
-            ))}
+            {Object.entries(sentimentData.overallSentiment.emotional_scores).map(([emotion, score]) => {
+              const config = emotionConfig[emotion];
+              if (!config) return null;
+              
+              return (
+                <ProgressBar 
+                  key={emotion} 
+                  value={score} 
+                  emotion={emotion}
+                  config={config}
+                />
+              );
+            })}
           </div>
         )}
 
         {error && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
             <p className="text-sm text-red-600 dark:text-red-400">
-              Using demo data. API error: {error}
+              API error: {error}
             </p>
+          </div>
+        )}
+
+        {/* Message-level sentiments */}
+        {sentimentData.messageSentiments.size > 0 && (
+          <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+              Recent Messages
+            </h3>
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {Array.from(sentimentData.messageSentiments.entries()).slice(-3).map(([key, value]) => (
+                <div key={key} className="flex justify-between items-center text-xs">
+                  <span className="truncate max-w-[180px] text-gray-600">
+                    "{typeof value === 'object' ? value.text : key}"
+                  </span>
+                  <span className={`px-2 py-1 rounded-full ${
+                    ['joy', 'love'].includes(typeof value === 'object' ? value.emotion : value) 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {typeof value === 'object' ? value.emotion : value}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
