@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { BarChart3, Brain, TrendingUp, Smile, Frown, Meh, Zap, CloudRain, Flame, LucideIcon, MessageCircle, Heart } from 'lucide-react';
-import { useSentiment } from "@hooks/use-sentiment-analysis";
+import { useSentiment } from "@/hooks/use-sentiment-analysis";
 
 // Type definitions
 export interface ChatMessage {

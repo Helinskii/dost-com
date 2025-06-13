@@ -1,3 +1,5 @@
+"use client"
+
 import type React from "react"
 
 import { RealtimeChat } from "@/components/realtime-chat"
@@ -6,7 +8,7 @@ import { useRef, useState } from "react"
 import SentimentSidebar from "./sentiment"
 import { ChatMessage } from "@/hooks/use-realtime-chat"
 import AIResponseSuggestions from "./ai-response-suggestions"
-import { SentimentProvider, useSentiment } from "@hooks/use-sentiment-analysis"
+import { SentimentProvider, useSentiment } from "@/hooks/use-sentiment-analysis"
 
 // Main Chat Component (wrapped with context)
 function ChatPage() {

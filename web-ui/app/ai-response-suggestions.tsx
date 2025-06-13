@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Sparkles, Copy, Send, RefreshCw, ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
-import { useSentiment } from './sentiment-context';
+import { useSentiment } from '@/hooks/use-sentiment-analysis';
 
 export interface ChatMessage {
   id: string;
