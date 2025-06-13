@@ -157,6 +157,31 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({
       }
 
       const data = await response.json();
+
+//       const data = {
+//   success: true,
+//   emotion_last_message: "joy",
+//   emotional_scores: {
+//     sadness: 0.15,
+//     joy: 0.35,
+//     love: 0.20,
+//     anger: 0.10,
+//     fear: 0.05,
+//     unknown: 0.15
+//   },
+//   emotion_per_text: [
+//     { "Hey there!": "joy" },
+//     { "How are you doing?": "unknown" },
+//     { "I'm excited about this project": "joy" },
+//     { "That's concerning": "fear" },
+//     { "Thanks for your help": "love" }
+//   ],
+//   metadata: {
+//     totalMessages: 5,
+//     analyzedAt: new Date().toISOString(),
+//     confidence: 0.87
+//   }
+// };
       
       // Update context with API response
       updateSentimentFromAPI(data);
