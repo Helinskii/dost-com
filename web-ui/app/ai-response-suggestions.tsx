@@ -88,7 +88,7 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [sentimentData, getDominantEmotion, getSentimentTrend, isPositiveSentiment, messages, username]);
+  }, [sentimentData, getDominantEmotion, getSentimentTrend, isPositiveSentiment, username]);
 
   // Generate contextual fallback suggestions
   const generateFallbackSuggestions = (emotion: string | null): AISuggestion[] => {
