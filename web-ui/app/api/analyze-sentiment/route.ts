@@ -15,18 +15,20 @@ interface AnalyzeSentimentRequest {
   timestamp: string;
 }
 
-interface SentimentValues {
-  positive: number;
-  negative: number;
-  neutral: number;
-  excited: number;
-  sad: number;
-  angry: number;
+interface EmotionalScores {
+  sadness: number;
+  joy: number;
+  love: number;
+  anger: number;
+  fear: number;
+  unknown: number;
 }
 
 interface AnalyzeSentimentResponse {
   success: boolean;
-  sentiments: SentimentValues;
+  emotion_last_message: string;
+  emotional_scores: EmotionalScores;
+  emotion_per_text: Array<Record<string, string>>;
   metadata: {
     totalMessages: number;
     analyzedAt: string;
@@ -38,24 +40,53 @@ export async function POST(request: NextRequest) {
   try {
     const data: AnalyzeSentimentRequest = await request.json();
     
-    // For now, return mock data
-    // Later you can integrate with OpenAI, Google Cloud NLP, AWS Comprehend, etc.
-    const mockSentiments: SentimentValues = {
-      positive: Math.floor(Math.random() * 100),
-      negative: Math.floor(Math.random() * 100),
-      neutral: Math.floor(Math.random() * 100),
-      excited: Math.floor(Math.random() * 100),
-      sad: Math.floor(Math.random() * 100),
-      angry: Math.floor(Math.random() * 100)
+    if (!data.messages || data.messages.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'No messages provided' },
+        { status: 400 }
+      );
+    }
+
+    // Mock emotion detection for each message
+    const emotions = ['sadness', 'joy', 'love', 'anger', 'fear', 'unknown'];
+    const emotionPerText = data.messages.map(msg => ({
+      [msg.content]: emotions[Math.floor(Math.random() * emotions.length)]
+    }));
+
+    // Get last message emotion
+    const lastMessage = data.messages[data.messages.length - 1];
+    const lastMessageEmotion = emotions[Math.floor(Math.random() * emotions.length)];
+
+    // Generate emotional scores (normalized to sum ≤ 1.0)
+    const rawScores = {
+      sadness: Math.random() * 0.5,
+      joy: Math.random() * 0.5,
+      love: Math.random() * 0.3,
+      anger: Math.random() * 0.4,
+      fear: Math.random() * 0.3,
+      unknown: Math.random() * 0.2
     };
-    
+
+    // Normalize scores
+    const total = Object.values(rawScores).reduce((sum, val) => sum + val, 0);
+    const normalizedScores: EmotionalScores = {
+      sadness: Number((rawScores.sadness / total).toFixed(2)),
+      joy: Number((rawScores.joy / total).toFixed(2)),
+      love: Number((rawScores.love / total).toFixed(2)),
+      anger: Number((rawScores.anger / total).toFixed(2)),
+      fear: Number((rawScores.fear / total).toFixed(2)),
+      unknown: Number((rawScores.unknown / total).toFixed(2))
+    };
+
     const response: AnalyzeSentimentResponse = {
       success: true,
-      sentiments: mockSentiments,
+      emotion_last_message: lastMessageEmotion,
+      emotional_scores: normalizedScores,
+      emotion_per_text: emotionPerText,
       metadata: {
         totalMessages: data.messages.length,
         analyzedAt: new Date().toISOString(),
-        confidence: 0.92
+        confidence: 0.85 + Math.random() * 0.1 // 0.85-0.95
       }
     };
     
