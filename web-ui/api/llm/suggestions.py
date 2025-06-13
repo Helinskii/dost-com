@@ -42,7 +42,7 @@ The current user's name is: {username}
 Your task is to generate response suggestions for {username}, based only on messages from other participants in the chat history.  
 Use {username}'s previous messages as context to maintain coherence and avoid repetition, but do not generate responses to their own messages.
 
-CURRENT SENTIMENT (0–100): {dominant}  
+CURRENT SENTIMENT (0-100): {dominant}  
 The sentiment reflects the emotional tone of the entire conversation and should be used to guide de-escalation and promote a positive, relationship-preserving response.
 
 CONTEXT:
