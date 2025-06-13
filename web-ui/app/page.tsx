@@ -15,7 +15,16 @@ function ChatPage() {
   const [username, setUsername] = useState("")
   const [roomName, setRoomName] = useState("general")
   const [hasJoined, setHasJoined] = useState(false)
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    // {
+    //             "content": "What kind of help do you need?",
+    //             "createdAt": "2025-06-08T13:41:48.184Z",
+    //             "id": "023770cd-4d40-4b58-b63e-4cc4c2a5e83f",
+    //             "user": {
+    //                 "name": "god"
+    //             }
+    //         }
+  ]);
   const [showSidebar, setShowSidebar] = useState(true);
   const messagesRef = useRef([]);
 
