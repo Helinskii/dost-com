@@ -54,18 +54,6 @@ function ChatPage() {
     // addMessageSentiment(generateId(), message, 'unknown');
   };
 
-  // Convert context sentiment to legacy format for existing components
-  const legacySentiments = {
-    positive: sentimentData.overallSentiment.emotional_scores.joy + 
-              sentimentData.overallSentiment.emotional_scores.love,
-    negative: sentimentData.overallSentiment.emotional_scores.sadness + 
-              sentimentData.overallSentiment.emotional_scores.anger,
-    neutral: sentimentData.overallSentiment.emotional_scores.unknown,
-    excited: sentimentData.overallSentiment.emotional_scores.joy,
-    sad: sentimentData.overallSentiment.emotional_scores.sadness,
-    angry: sentimentData.overallSentiment.emotional_scores.anger
-  };
-
   if (!hasJoined) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -178,8 +166,6 @@ function ChatPage() {
           {/* Pass sentiment context data to AI suggestions */}
           <AIResponseSuggestions
             messages={messages}
-            sentiments={legacySentiments}
-            sentimentContext={sentimentData} // New prop with full context
             username={username}
             onSendMessage={handleSendMessage}
           />
@@ -194,11 +180,6 @@ function ChatPage() {
             <SentimentSidebar
               chatId={roomName}
               messages={messages}
-              sentimentContext={sentimentData} // Pass context data
-              onSentimentsUpdate={(newSentiments) => {
-                // Legacy callback - you might not need this anymore
-                console.log('Legacy sentiment update:', newSentiments);
-              }}
             />
           )}
         </div>

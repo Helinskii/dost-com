@@ -22,7 +22,6 @@ interface EmotionConfig {
 interface SentimentSidebarProps {
   chatId: string;
   messages?: ChatMessage[];
-  onSentimentsUpdate?: (sentiments: any) => void; // Legacy callback
 }
 
 interface ProgressBarProps {
@@ -72,8 +71,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ value, emotion, config }) => 
 
 const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ 
   chatId, 
-  messages = [], 
-  onSentimentsUpdate 
+  messages = []
 }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -164,19 +162,6 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({
       updateSentimentFromAPI(data);
       lastAnalyzedCountRef.current = messages.length;
 
-      // Legacy callback for backward compatibility
-      if (onSentimentsUpdate) {
-        const legacyFormat = {
-          positive: data.emotional_scores.joy + data.emotional_scores.love,
-          negative: data.emotional_scores.sadness + data.emotional_scores.anger,
-          neutral: data.emotional_scores.unknown,
-          excited: data.emotional_scores.joy,
-          sad: data.emotional_scores.sadness,
-          angry: data.emotional_scores.anger
-        };
-        onSentimentsUpdate(legacyFormat);
-      }
-
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
@@ -184,7 +169,7 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({
       setLoading(false);
       isAnalyzingRef.current = false;
     }
-  }, [chatId, messages, updateSentimentFromAPI, onSentimentsUpdate]);
+  }, [chatId, messages, updateSentimentFromAPI]);
 
   // Auto-analyze when messages change
   useEffect(() => {
