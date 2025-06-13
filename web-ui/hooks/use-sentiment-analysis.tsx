@@ -408,17 +408,9 @@ export const SentimentProvider = ({ children }) => {
 
     // Update per-message sentiment
     if (emotion_per_text) {
-      const newMessageSentiments = new Map(prev.messageSentiments);
-      
-      emotion_per_text.forEach(item => {
-        const messageText = Object.keys(item)[0];
-        const emotion = item[messageText];
-        newMessageSentiments.set(messageText, emotion);
-      });
-
       setSentimentData(prev => ({
         ...prev,
-        messageSentiments: newMessageSentiments
+        messageSentiments: prev.messageSentiments
       }));
     }
   };
