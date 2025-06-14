@@ -2,7 +2,17 @@ from fastapi import FastAPI, Request
 from pydantic import BaseModel
 from sentiment_infer import predict_emotion, predict_compl_emotion
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Or specify your frontend's URL(s) instead of "*"
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class User(BaseModel):
     name: str
@@ -10,8 +20,7 @@ class User(BaseModel):
 class Message(BaseModel):
     id: str
     content: str
-    user: User
-    createdAt: str
+    user: str
 
 class ChatPayload(BaseModel):
     chatId: str
