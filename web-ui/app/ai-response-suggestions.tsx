@@ -128,7 +128,8 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
       lastProcessedMessageCount.current = messages.length;
       
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      const errorMessage = err instanceof Error ? 
+        err.message : 'Unknown error occurred';
       setError(errorMessage);
       console.error('Failed to fetch suggestions:', err);
     } finally {
@@ -180,15 +181,25 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
   }, []);
 
   const handleSend = useCallback((suggestion: AISuggestion) => {
-    onSendMessage(suggestion.content);
-    setSelectedId(suggestion.id);
-    setTimeout(() => setSelectedId(null), 1000);
+    console.log('Sending message:', suggestion.content);
+    console.log('onSendMessage function:', onSendMessage);
+    
+    if (typeof onSendMessage === 'function') {
+      onSendMessage(suggestion.content);
+      setSelectedId(suggestion.id);
+      setTimeout(() => setSelectedId(null), 1000);
+    } else {
+      console.error('onSendMessage is not a function:', onSendMessage);
+    }
   }, [onSendMessage]);
 
   // Don't render if no messages
   if (messages.length === 0) {
     return null;
   }
+
+  const showLoader = loading && !waitingForSentiment;
+  const showSuggestions = !loading && !waitingForSentiment && suggestions.length > 0;
 
   return (
     <div className="bg-gradient-to-r from-white to-blue-50/30 border-t border-gray-200/60 shadow-sm backdrop-blur-sm">
@@ -205,7 +216,9 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
             <div>
               <h3 className="text-base font-semibold text-gray-800">AI Response Suggestions</h3>
               <p className="text-xs text-gray-500">
-                {waitingForSentiment ? 'Analyzing conversation...' : 'Smart responses based on sentiment'}
+                {waitingForSentiment 
+                  ? 'Analyzing conversation...' 
+                  : 'Smart responses based on sentiment'}
               </p>
             </div>
             {(loading || waitingForSentiment) && (
@@ -235,11 +248,11 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
           </div>
         </div>
 
-        {/* Content */}
+        {/* Content - Fixed height container to prevent layout shifts */}
         {isExpanded && (
-          <div className="space-y-3">
+          <div className="min-h-[120px]"> {/* Fixed minimum height */}
             {/* Error State */}
-            {error && (
+            {error && !loading && !waitingForSentiment && (
               <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
                 <div className="flex items-start gap-3">
                   <div className="w-5 h-5 text-red-500 mt-0.5">⚠️</div>
@@ -257,46 +270,17 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
               </div>
             )}
 
-            {/* Waiting for Sentiment */}
-            {waitingForSentiment && !error && (
-              <div className="p-6 text-center">
-                <div className="flex flex-col items-center gap-3">
-                  <div className="relative">
-                    <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
-                    <div className="absolute inset-0 rounded-full bg-purple-100 animate-ping opacity-30"></div>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-purple-700">Analyzing conversation sentiment</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      This helps generate more appropriate responses
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Empty State */}
-            {suggestions.length === 0 && !loading && !waitingForSentiment && !error && (
-              <div className="p-8 text-center">
-                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Sparkles className="w-8 h-8 text-purple-600" />
-                </div>
-                <p className="text-sm font-medium text-gray-700 mb-1">Ready to help you respond</p>
-                <p className="text-xs text-gray-500">
-                  Continue the conversation to see personalized suggestions
-                </p>
-              </div>
-            )}
-
-            {/* Suggestions List */}
-            {suggestions.length > 0 && (
+            {/* Suggestions */}
+            {showSuggestions && (
               <div className="space-y-3">
                 {suggestions.map((suggestion, index) => (
-                  <div
+                  <div 
                     key={suggestion.id}
-                    className={`group relative p-4 bg-white rounded-xl border border-gray-200 hover:border-purple-200 hover:shadow-md transition-all duration-200 ${
-                      selectedId === suggestion.id 
-                        ? 'ring-2 ring-purple-500 bg-purple-50 border-purple-300' 
+                    className={`
+                      relative p-4 bg-white border border-gray-200 rounded-xl shadow-sm 
+                      hover:shadow-md hover:border-gray-300 transition-all duration-200 group
+                      ${selectedId === suggestion.id ? 
+                        'ring-2 ring-purple-500 bg-purple-50 border-purple-300' 
                         : ''
                     }`}
                   >
@@ -306,34 +290,34 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
                     </div>
 
                     {/* Suggestion Content */}
-                    <div className="pr-20">
+                    <div className="pr-16"> {/* Reduced padding to accommodate smaller buttons */}
                       <p className="text-sm text-gray-800 leading-relaxed">
                         {suggestion.content}
                       </p>
                     </div>
                     
-                    {/* Action Buttons */}
-                    <div className="absolute top-4 right-4 flex items-center gap-2">
+                    {/* Action Buttons - Made smaller */}
+                    <div className="absolute top-3 right-3 flex items-center gap-1">
                       <button
                         onClick={() => handleCopy(suggestion)}
-                        className="flex items-center justify-center w-10 h-10 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200 group-hover:opacity-100 opacity-70"
+                        className="flex items-center justify-center w-7 h-7 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-all duration-200 group-hover:opacity-100 opacity-70"
                         title="Copy to clipboard"
                         aria-label={`Copy suggestion ${index + 1} to clipboard`}
                       >
                         {copiedId === suggestion.id ? (
-                          <CheckCircle2 className="w-5 h-5 text-green-500" />
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
                         ) : (
-                          <Copy className="w-5 h-5" />
+                          <Copy className="w-4 h-4" />
                         )}
                       </button>
                       
                       <button
                         onClick={() => handleSend(suggestion)}
-                        className="flex items-center justify-center w-10 h-10 text-white bg-purple-500 hover:bg-purple-600 rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md"
+                        className="flex items-center justify-center w-7 h-7 text-white bg-purple-500 hover:bg-purple-600 rounded-md transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md"
                         title="Send this message"
                         aria-label={`Send suggestion ${index + 1}`}
                       >
-                        <Send className="w-5 h-5" />
+                        <Send className="w-4 h-4" />
                       </button>
                     </div>
 
@@ -348,17 +332,44 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
               </div>
             )}
 
-            {/* Loading State for Generation */}
-            {loading && !waitingForSentiment && (
-              <div className="p-6 text-center">
+            {/* Loading State for Generation - Fixed position */}
+            {showLoader && (
+              <div className="flex items-center justify-center h-24"> {/* Fixed height to prevent shifts */}
                 <div className="flex flex-col items-center gap-3">
                   <Loader2 className="w-6 h-6 animate-spin text-purple-500" />
-                  <div>
+                  <div className="text-center">
                     <p className="text-sm font-medium text-purple-700">Generating suggestions...</p>
                     <p className="text-xs text-gray-500 mt-1">
                       Creating personalized responses for you
                     </p>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Waiting for sentiment state */}
+            {waitingForSentiment && !loading && (
+              <div className="flex items-center justify-center h-24">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-6 h-6 border-2 border-purple-200 border-t-purple-500 rounded-full animate-spin"></div>
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-purple-700">Waiting for sentiment analysis...</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Analyzing conversation tone first
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Empty state when no suggestions and not loading */}
+            {!loading && !waitingForSentiment && !error && suggestions.length === 0 && (
+              <div className="flex items-center justify-center h-24">
+                <div className="text-center">
+                  <p className="text-sm text-gray-500">No suggestions available</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Try refreshing or send more messages
+                  </p>
                 </div>
               </div>
             )}
