@@ -29,7 +29,7 @@ Potential Dataset - [Kaggle Data Set](https://www.kaggle.com/datasets/parulpande
 
 ## Vercel Web-UI
 
-# Link to Application -> [Dost-Com](https://v0-open-in-v0-im.vercel.app/)
+# Link to Application -> [Dost-Com](https://dostcom.vercel.app/)
 
 ##### Prototype-1 of Web GUI
 ![Chat application with sentiment analysis](/images/prototype-1.png)
