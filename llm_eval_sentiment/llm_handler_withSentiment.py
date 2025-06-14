@@ -20,59 +20,41 @@ load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 MODEL_NAME = "gpt-4o-mini"
 
-## Builds the prompt for the LLM using the recent message and context history
-def build_rag_prompt(recent_entry, context_history):
-
-    username = recent_entry['sender']
-    message = recent_entry['message']
+def build_prompt_with_sentiment(recent_entry, context_history):
+    username = recent_entry["sender"]
+    recent_msg = recent_entry["message"]
     
-    # Convert probabilities to percentages and sort
-    sentiment_scores = recent_entry.get("sentiment", {})
-    sorted_sentiments = sorted(sentiment_scores.items(), key=lambda x: x[1], reverse=True)
-    sentiment_text = ", ".join([f"{k}: {round(v * 100)}%" for k, v in sorted_sentiments]) or "No dominant emotion detected"
+    # Format sentiment as sorted percentage
+    sorted_sentiments = sorted(recent_entry["sentiments"].items(), key=lambda x: x[1], reverse=True)
+    sentiment_text = ", ".join([f"{k}: {round(v * 100)}%" for k, v in sorted_sentiments]) or "No sentiment available"
 
-    # Filter context to include the user's own messages
-    if context_history:
-        own_context = "\n".join(
-            f"{entry['sender']}: {entry['message']} (emotion: {entry['sentiment']})"
-            for entry in context_history if entry['sender'] == username
-        )
-    else:
-        own_context = "(No prior messages from current user)"
+    # Build context
+    formatted_context = "\n".join(
+        f"{entry['sender']}: {entry['message']} (emotion: {entry['sentiment']})"
+        for entry in context_history if entry["sender"] != username
+    )
 
-    # Filter context to exclude the user's own messages
-    if context_history:
-        others_context = "\n".join(
-            f"{entry['sender']}: {entry['message']} (emotion: {entry['sentiment']})"
-            for entry in context_history if entry['sender'] != username
-        )
-    else:
-        others_context = "(No messages from other users)"
+    own_context = "\n".join(
+        f"{entry['sender']}: {entry['message']} (emotion: {entry['sentiment']})"
+        for entry in context_history if entry["sender"] == username
+    )
 
     prompt = f"""
+You are a helpful chatbot assistant in a group chat.
 
-You are an emotionally intelligent assistant embedded in a group chat support system.
 The current user's name is: {username}
 
-Your task is to Understand the emotional tone and context, and Generate kind and constructive messages that someone else in the group chat can respond with.
+### {username} recent message: {recent_msg}  
+### {username} recent sentiment (sorted): {sentiment_text}
 
-Take into account:
-- The emotional profile of the recent message
-- The user's own past messages to understand what they're going through
-- Other users' past responses to maintain coherence and empathy
+### Other participants' prior messages:
+{formatted_context}
 
-### Recent Message from {username}:
-{message}  
-Emotional Profile: {sentiment_text}
-
-### {username}'s Previous Messages:
+### {username}'s prior messages:
 {own_context}
 
-### Messages from Other Users:
-{others_context}
-
 ### Task:
-Suggest 1 to 3 supportive, emotionally aware replies that a group member might send in response.
+Suggest 1 to 3 supportive, emotionally aware replies that any group member might send in response.
 Guidelines:
 - Do NOT assume how many people are in the group. Avoid phrases like “just the two of us” or “three of us”.
 - Do NOT include usernames or any names.
@@ -84,7 +66,7 @@ Guidelines:
 
 ############Uncomment this for OpenAI LLMs###########
 def get_openai_rag_response(recent_entry, context_history):
-    prompt = build_rag_prompt(recent_entry, context_history)
+    prompt = build_prompt_with_sentiment(recent_entry, context_history)
 
     response = openai.chat.completions.create(
         model=MODEL_NAME,
