@@ -48,24 +48,26 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
 
   // Detect when sentiment analysis is complete
   const isSentimentAnalysisComplete = useMemo(() => {
-    const recentMessages = messages.slice(-5);
-    const analyzedCount = recentMessages.filter(msg => 
-      sentimentData.messageSentiments.has(msg.id)
-    ).length;
-    
-    return recentMessages.length === 0 || analyzedCount >= Math.min(3, recentMessages.length);
-  }, [messages, sentimentData.messageSentiments]);
+    // Check if sentiment analysis has been done and is marked as complete
+    return sentimentData.isAnalysisComplete && sentimentData.lastAnalysisTimestamp > 0;
+  }, [sentimentData.isAnalysisComplete, sentimentData.lastAnalysisTimestamp]);
 
-  // Track sentiment data changes
+  // Track sentiment data changes with timestamp
   const sentimentDataSignature = useMemo(() => ({
     messageCount: sentimentData.messageSentiments.size,
     lastEmotion: sentimentData.overallSentiment.emotion_last_message,
-    timestamp: Date.now()
-  }), [sentimentData.messageSentiments.size, sentimentData.overallSentiment.emotion_last_message]);
+    timestamp: sentimentData.lastAnalysisTimestamp,
+    isComplete: sentimentData.isAnalysisComplete
+  }), [
+    sentimentData.messageSentiments.size, 
+    sentimentData.overallSentiment.emotion_last_message,
+    sentimentData.lastAnalysisTimestamp,
+    sentimentData.isAnalysisComplete
+  ]);
 
   // Update sentiment tracking when data changes
   useEffect(() => {
-    if (sentimentDataSignature.messageCount > 0) {
+    if (sentimentDataSignature.messageCount > 0 && sentimentDataSignature.isComplete) {
       lastSentimentUpdateTime.current = sentimentDataSignature.timestamp;
     }
   }, [sentimentDataSignature]);

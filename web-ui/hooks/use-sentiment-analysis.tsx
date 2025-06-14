@@ -47,6 +47,8 @@ interface SentimentData {
   messageSentiments: Map<string, MessageSentiment>;
   userSentiments: Map<string, UserSentiment>;
   conversationHistory: Message[];
+  lastAnalysisTimestamp: number;
+  isAnalysisComplete: boolean;
 }
 
 interface SentimentContextValue {
@@ -181,7 +183,9 @@ export const SentimentProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     },
     messageSentiments: new Map(),
     userSentiments: new Map(),
-    conversationHistory: []
+    conversationHistory: [],
+    lastAnalysisTimestamp: 0,
+    isAnalysisComplete: false
   });
 
   // Update sentiment from API response
@@ -237,6 +241,9 @@ export const SentimentProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const newMessageSentiments = new Map(prev.messageSentiments);
       const newUserSentiments = new Map(prev.userSentiments);
 
+      // Track if this is actually new data
+      const hasNewMessages = messages.length > prev.conversationHistory.length;
+
       // Analyze new messages
       messages.forEach(message => {
         if (!newMessageSentiments.has(message.id)) {
@@ -290,6 +297,8 @@ export const SentimentProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         messageSentiments: newMessageSentiments,
         userSentiments: newUserSentiments,
         conversationHistory: messages,
+        lastAnalysisTimestamp: hasNewMessages ? Date.now() : prev.lastAnalysisTimestamp,
+        isAnalysisComplete: true,
         overallSentiment: {
           emotion_last_message: lastMessageSentiment?.emotion || prev.overallSentiment.emotion_last_message,
           emotional_scores: Object.values(overallScores).some(score => score > 0) ? overallScores : prev.overallSentiment.emotional_scores
@@ -341,6 +350,19 @@ export const SentimentProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return sentimentData.overallSentiment.emotional_scores[emotion] || 0;
   }, [sentimentData.overallSentiment.emotional_scores]);
 
+  // Check if sentiment analysis is complete for given messages
+  const isSentimentAnalysisComplete = useCallback((messages: Message[]): boolean => {
+    if (messages.length === 0) return true;
+    
+    const recentMessages = messages.slice(-5); // Check last 5 messages
+    const analyzedCount = recentMessages.filter(msg => 
+      sentimentData.messageSentiments.has(msg.id)
+    ).length;
+    
+    // Consider complete if we have analysis for most recent messages
+    return analyzedCount >= Math.min(3, recentMessages.length);
+  }, [sentimentData.messageSentiments]);
+
   const contextValue: SentimentContextValue = {
     sentimentData,
     updateSentimentFromAPI,
@@ -352,7 +374,8 @@ export const SentimentProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     isPositiveSentiment,
     isNegativeSentiment,
     getSentimentScore,
-    updateMessagesData
+    updateMessagesData,
+    isSentimentAnalysisComplete
   };
 
   return (

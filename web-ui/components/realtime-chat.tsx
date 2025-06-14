@@ -63,12 +63,13 @@ export const RealtimeChat = ({
     return sortedMessages
   }, [initialMessages, realtimeMessages])
 
-  // Update sentiment analysis when messages change
+  // Update sentiment analysis ONLY when messages actually change
+  // This is separate from the message sending flow
   useEffect(() => {
     if (allMessages.length > 0) {
       updateMessagesData(allMessages)
     }
-  }, [allMessages, updateMessagesData])
+  }, [allMessages.length, allMessages[allMessages.length - 1]?.id]) // Only when count or last message ID changes
 
   // Calculate room statistics
   const roomStats = useMemo(() => {
@@ -88,22 +89,25 @@ export const RealtimeChat = ({
     }
   }, [allMessages, getDominantEmotion, getSentimentTrend, getSentimentScore])
 
+  // Call parent onMessage callback when messages change
   useEffect(() => {
     if (onMessage) {
       onMessage(allMessages)
     }
   }, [allMessages, onMessage])
 
+  // Auto-scroll when messages change
   useEffect(() => {
-    // Scroll to bottom whenever messages change
     scrollToBottom()
   }, [allMessages, scrollToBottom])
 
+  // Handle sending messages - keep this simple and don't interfere with realtime flow
   const handleSendMessage = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault()
       if (!newMessage.trim() || !isConnected) return
 
+      // Just send the message - let the realtime system handle the rest
       sendMessage(newMessage)
       setNewMessage('')
     },
