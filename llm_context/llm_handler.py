@@ -20,35 +20,60 @@ load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 MODEL_NAME = "gpt-4o-mini"
 
-## Formats the retrieved RAG chat context into a newline-separated string
-def format_rag_context(chat_context):
-    return "\n".join(
-        f"{entry['sender']}: {entry['message']} (emotion: {entry['sentiment']})"
-        for entry in chat_context
-    )
-
 ## Builds the prompt for the LLM using the recent message and context history
 def build_rag_prompt(recent_entry, context_history):
-    formatted_context = format_rag_context(context_history)
+
+    username = recent_entry['sender']
+    message = recent_entry['message']
+    
+    # Convert probabilities to percentages and sort
+    sentiment_scores = recent_entry.get("sentiment", {})
+    sorted_sentiments = sorted(sentiment_scores.items(), key=lambda x: x[1], reverse=True)
+    sentiment_text = ", ".join([f"{k}: {round(v * 100)}%" for k, v in sorted_sentiments]) or "No dominant emotion detected"
+
+    # Filter context to include the user's own messages
+    if context_history:
+        own_context = "\n".join(
+            f"{entry['sender']}: {entry['message']} (emotion: {entry['sentiment']})"
+            for entry in context_history if entry['sender'] == username
+        )
+    else:
+        own_context = "(No prior messages from current user)"
+
+    # Filter context to exclude the user's own messages
+    if context_history:
+        others_context = "\n".join(
+            f"{entry['sender']}: {entry['message']} (emotion: {entry['sentiment']})"
+            for entry in context_history if entry['sender'] != username
+        )
+    else:
+        others_context = "(No messages from other users)"
 
     prompt = f"""
-You are an empathetic and emotionally intelligent assistant in a group chat system.
 
-Below is:
-1. The recent message along with its detected emotion.
-2. The relevant conversation history retrieved via RAG.
+You are an emotionally intelligent assistant embedded in a group chat support system.
+The current user's name is: {username}
 
-Your job is to understand the emotional tone and context, and suggest 1 to 3 emotionally appropriate, kind, and constructive messages that would help keep the conversation positive and supportive.
+Your task is to Understand the emotional tone and context, and Generate kind and constructive messages that someone else in the group chat can respond with.
 
-### Recent Message:
-{recent_entry['sender']}: {recent_entry['message']} (emotion: {recent_entry['sentiment']})
+Take into account:
+- The emotional profile of the recent message
+- The user's own past messages to understand what they're going through
+- Other users' past responses to maintain coherence and empathy
 
-### Context History:
-{formatted_context}
+### Recent Message from {username}:
+{message}  
+Emotional Profile: {sentiment_text}
+
+### {username}'s Previous Messages:
+{own_context}
+
+### Messages from Other Users:
+{others_context}
 
 ### Task:
-Provide 1 to 3 appropriate, supportive replies that someone in the chat could respond with next.
-Do not include any explanations or labels, just the suggestions.
+Suggest 1 to 3 supportive, emotionally aware replies from another group members which would help keep the conversation positive and supportive.
+Each suggestion must be under 150 characters. Do not include explanations or labels—just the replies.
 """
     return prompt.strip()
 
@@ -59,7 +84,7 @@ def get_openai_rag_response(recent_entry, context_history):
     response = openai.chat.completions.create(
         model=MODEL_NAME,
         messages=[
-            {"role": "system", "content": "You are a kind, context-aware assistant helping in group chats."},
+            {"role": "system", "content": "You are a empathetic and kind, context-aware intelligent assistant helping in group chats."},
             {"role": "user", "content": prompt}
         ],
         temperature=0.7,

@@ -11,7 +11,7 @@ app = FastAPI()
 class ChatEntry(BaseModel):
     sender: str
     message: str
-    sentiment: str
+    sentiment: Dict[str, float]
 
 class SuggestionRequest(BaseModel):
     recent_entry: ChatEntry
