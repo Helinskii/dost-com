@@ -6,7 +6,7 @@ import { RealtimeChat } from "@/components/realtime-chat"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useRef, useState } from "react"
 import SentimentSidebar from "./sentiment"
-import { ChatMessage } from "@/hooks/use-realtime-chat"
+import { ChatMessage, useRealtimeChat } from "@/hooks/use-realtime-chat"
 import AIResponseSuggestions from "./ai-response-suggestions"
 import { SentimentProvider, useSentiment } from "@/hooks/use-sentiment-analysis"
 
@@ -38,6 +38,15 @@ function ChatPage() {
     isPositiveSentiment
   } = useSentiment();
 
+  const {
+    messages: realtimeMessages,
+    sendMessage,
+    isConnected,
+  } = useRealtimeChat({
+    roomName,
+    username,
+  })
+
   const handleJoinChat = (e: React.FormEvent) => {
     e.preventDefault()
     if (username.trim()) {
@@ -59,10 +68,7 @@ function ChatPage() {
   // Send message with sentiment tracking
   const handleSendMessage = (message: any) => {
     console.log('Sending message:', message);
-    // Your actual send message implementation here
-    
-    // Optionally add optimistic sentiment update
-    // addMessageSentiment(generateId(), message, 'unknown');
+    sendMessage(message);
   };
 
   if (!hasJoined) {
