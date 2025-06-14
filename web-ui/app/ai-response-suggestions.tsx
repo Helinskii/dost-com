@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Sparkles, Copy, Send, RefreshCw, ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
 import { useSentiment } from '@/hooks/use-sentiment-analysis';
 
@@ -38,17 +38,75 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
   const [isExpanded, setIsExpanded] = useState(initialExpanded);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [waitingForSentiment, setWaitingForSentiment] = useState(false);
 
   // Use sentiment context
   const { sentimentData, getDominantEmotion, getSentimentTrend, isPositiveSentiment } = useSentiment();
 
-  const fetchSuggestions = useCallback(async () => {
-    if (messages.length === 0) return;
+  // Track when sentiment analysis is complete
+  const lastProcessedMessageCount = useRef(0);
+  const lastSentimentUpdateTime = useRef(0);
+  const requestInProgress = useRef(false);
 
+  // Detect when sentiment analysis is complete
+  const isSentimentAnalysisComplete = useMemo(() => {
+    // Check if we have sentiment data for recent messages
+    const recentMessages = messages.slice(-5);
+    const analyzedCount = recentMessages.filter(msg => 
+      sentimentData.messageSentiments.has(msg.id)
+    ).length;
+    
+    // Consider complete if we have analysis for most recent messages
+    return recentMessages.length === 0 || analyzedCount >= Math.min(3, recentMessages.length);
+  }, [messages, sentimentData.messageSentiments]);
+
+  // Track sentiment data changes
+  const sentimentDataSignature = useMemo(() => {
+    return {
+      messageCount: sentimentData.messageSentiments.size,
+      lastEmotion: sentimentData.overallSentiment.emotion_last_message,
+      timestamp: Date.now()
+    };
+  }, [sentimentData.messageSentiments.size, sentimentData.overallSentiment.emotion_last_message]);
+
+  // Update sentiment tracking when data changes
+  useEffect(() => {
+    if (sentimentDataSignature.messageCount > 0) {
+      lastSentimentUpdateTime.current = sentimentDataSignature.timestamp;
+    }
+  }, [sentimentDataSignature]);
+
+  const fetchSuggestions = useCallback(async (forceRefresh = false) => {
+    // Don't fetch if no messages or already in progress
+    if (messages.length === 0 || (requestInProgress.current && !forceRefresh)) {
+      return;
+    }
+
+    // Don't fetch if we haven't processed new messages
+    if (!forceRefresh && messages.length <= lastProcessedMessageCount.current) {
+      return;
+    }
+
+    // Don't fetch if sentiment analysis is not complete yet
+    if (!forceRefresh && !isSentimentAnalysisComplete) {
+      setWaitingForSentiment(true);
+      return;
+    }
+
+    requestInProgress.current = true;
     setLoading(true);
     setError(null);
+    setWaitingForSentiment(false);
 
     try {
+      const sentimentPayload = {
+        overallSentiment: sentimentData.overallSentiment,
+        dominantEmotion: getDominantEmotion(),
+        trend: getSentimentTrend(),
+        isPositive: isPositiveSentiment(),
+        messageSentiments: Array.from(sentimentData.messageSentiments.entries()).slice(-5)
+      };
+
       const response = await fetch('/api/llm/suggestions', {
         method: 'POST',
         headers: {
@@ -58,16 +116,10 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
           username,
           chatHistory: {
             chatId: "",
-            messages: messages.slice(-10),
+            messages: messages.slice(-10), // Only send last 10 messages
             timestamp: new Date().toISOString()
           },
-          sentiment: {
-            overallSentiment: sentimentData.overallSentiment,
-            dominantEmotion: getDominantEmotion(),
-            trend: getSentimentTrend(),
-            isPositive: isPositiveSentiment(),
-            messageSentiments: Array.from(sentimentData.messageSentiments.entries()).slice(-5)
-          },
+          sentiment: sentimentPayload,
           timestamp: new Date().toISOString()
         })
       });
@@ -77,121 +129,46 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
       }
 
       const data = await response.json();
-      setSuggestions(data.data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate suggestions');
+      setSuggestions(data.data || []);
+      lastProcessedMessageCount.current = messages.length;
       
-      // Generate contextual fallback suggestions based on sentiment
-      const emotion = sentimentData.overallSentiment.emotion_last_message;
-      const fallbackSuggestions = generateFallbackSuggestions(emotion);
-      setSuggestions(fallbackSuggestions);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error occurred');
+      console.error('Failed to fetch suggestions:', err);
     } finally {
       setLoading(false);
+      requestInProgress.current = false;
     }
-  }, [sentimentData, getDominantEmotion, getSentimentTrend, isPositiveSentiment, username]);
+  }, [username, messages, sentimentData, getDominantEmotion, getSentimentTrend, isPositiveSentiment, isSentimentAnalysisComplete]);
 
-  // Generate contextual fallback suggestions
-  const generateFallbackSuggestions = (emotion: string | null): AISuggestion[] => {
-    const baseId = Date.now().toString();
-    
-    switch (emotion) {
-      case 'sadness':
-        return [
-          {
-            id: `${baseId}_1`,
-            content: "I can see this is difficult for you. I'm here to help and support you through this.",
-            tone: 'empathetic',
-            confidence: 0.85
-          },
-          {
-            id: `${baseId}_2`, 
-            content: "Thank you for sharing that with me. Let's work together to find a way forward.",
-            tone: 'professional',
-            confidence: 0.8
-          },
-          {
-            id: `${baseId}_3`,
-            content: "I understand how you're feeling. Take your time, and know that I'm here whenever you need me.",
-            tone: 'empathetic',
-            confidence: 0.9
-          }
-        ];
-      
-      case 'anger':
-        return [
-          {
-            id: `${baseId}_1`,
-            content: "I understand your frustration. Let me help resolve this issue as quickly as possible.",
-            tone: 'professional',
-            confidence: 0.9
-          },
-          {
-            id: `${baseId}_2`,
-            content: "I hear you, and your concerns are completely valid. Let's work on a solution together.",
-            tone: 'empathetic',
-            confidence: 0.85
-          },
-          {
-            id: `${baseId}_3`,
-            content: "Thank you for bringing this to my attention. I'll make sure we address this properly.",
-            tone: 'professional',
-            confidence: 0.8
-          }
-        ];
-      
-      case 'joy':
-        return [
-          {
-            id: `${baseId}_1`,
-            content: "That's fantastic news! I'm so happy to hear that. 😊",
-            tone: 'friendly',
-            confidence: 0.9
-          },
-          {
-            id: `${baseId}_2`,
-            content: "Wonderful! It's great to see things working out well for you.",
-            tone: 'friendly',
-            confidence: 0.85
-          },
-          {
-            id: `${baseId}_3`,
-            content: "Excellent! Thanks for sharing this positive update with me.",
-            tone: 'professional',
-            confidence: 0.8
-          }
-        ];
-      
-      default:
-        return [
-          {
-            id: `${baseId}_1`,
-            content: "Thank you for your message. How can I best assist you today?",
-            tone: 'professional',
-            confidence: 0.75
-          },
-          {
-            id: `${baseId}_2`,
-            content: "I appreciate you reaching out. Let me know if there's anything specific I can help with!",
-            tone: 'friendly',
-            confidence: 0.8
-          },
-          {
-            id: `${baseId}_3`,
-            content: "Thanks for connecting. I'm here to help with whatever you need.",
-            tone: 'friendly',
-            confidence: 0.75
-          }
-        ];
-    }
-  };
-
+  // Trigger suggestions when sentiment analysis is complete
   useEffect(() => {
-    if (messages.length > 0) {
-      fetchSuggestions();
+    // Only proceed if we have new messages
+    if (messages.length <= lastProcessedMessageCount.current) {
+      return;
     }
+
+    // If sentiment analysis is complete, fetch suggestions
+    if (isSentimentAnalysisComplete && !requestInProgress.current) {
+      const timeoutId = setTimeout(() => {
+        fetchSuggestions();
+      }, 500); // Small delay to ensure sentiment data is fully processed
+
+      return () => clearTimeout(timeoutId);
+    }
+    
+    // If sentiment analysis is not complete, wait for it
+    if (!isSentimentAnalysisComplete) {
+      setWaitingForSentiment(true);
+    }
+  }, [isSentimentAnalysisComplete, messages.length, fetchSuggestions]);
+
+  // Handle manual refresh
+  const handleRefresh = useCallback(() => {
+    fetchSuggestions(true);
   }, [fetchSuggestions]);
 
-  const handleCopy = async (suggestion: AISuggestion) => {
+  const handleCopy = useCallback(async (suggestion: AISuggestion) => {
     try {
       await navigator.clipboard.writeText(suggestion.content);
       setCopiedId(suggestion.id);
@@ -199,14 +176,30 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
     } catch (err) {
       console.error('Failed to copy:', err);
     }
+  }, []);
+
+  const handleSend = useCallback((suggestion: AISuggestion) => {
+    onSendMessage(suggestion.content);
+    setSelectedId(suggestion.id);
+    setTimeout(() => setSelectedId(null), 1000);
+  }, [onSendMessage]);
+
+  const getToneColor = (tone: string) => {
+    switch (tone) {
+      case 'professional': return 'bg-blue-100 text-blue-800';
+      case 'friendly': return 'bg-green-100 text-green-800';
+      case 'empathetic': return 'bg-purple-100 text-purple-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   };
 
-  const handleSend = (suggestion: AISuggestion) => {
-    setSelectedId(suggestion.id);
-    setTimeout(() => {
-      onSendMessage(suggestion.content);
-      setSelectedId(null);
-    }, 300);
+  const getToneIcon = (tone: string) => {
+    switch (tone) {
+      case 'professional': return '💼';
+      case 'friendly': return '😊';
+      case 'empathetic': return '🤗';
+      default: return '💭';
+    }
   };
 
   if (messages.length === 0) {
@@ -214,97 +207,121 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 transition-all duration-300">
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-gradient-to-r from-violet-500 to-purple-600 rounded-lg">
-            <Sparkles className="w-4 h-4 text-white" />
+    <div className="bg-white border-t border-gray-200 shadow-sm">
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-purple-600" />
+            <h3 className="text-sm font-medium text-gray-800">AI Response Suggestions</h3>
+            {(loading || waitingForSentiment) && (
+              <Loader2 className="w-3 h-3 animate-spin text-gray-400" />
+            )}
           </div>
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-            AI Suggested Responses
-          </span>
-          <span className="text-xs text-gray-500 dark:text-gray-400">
-            ({getDominantEmotion()})
-          </span>
-          {loading && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
+          
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleRefresh}
+              disabled={loading || waitingForSentiment}
+              className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+              title="Refresh suggestions"
+            >
+              <RefreshCw className={`w-3 h-3 ${(loading || waitingForSentiment) ? 'animate-spin' : ''}`} />
+            </button>
+            
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+              title={isExpanded ? 'Collapse' : 'Expand'}
+            >
+              {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
+            </button>
+          </div>
         </div>
-        {isExpanded ? (
-          <ChevronDown className="w-4 h-4 text-gray-400" />
-        ) : (
-          <ChevronUp className="w-4 h-4 text-gray-400" />
-        )}
-      </button>
 
-      <div
-        className={`overflow-hidden transition-all duration-300 ${
-          isExpanded ? 'max-h-96' : 'max-h-0'
-        }`}
-      >
-        <div className="px-4 pb-4 space-y-3">
-          {loading && suggestions.length === 0 ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-            </div>
-          ) : error && suggestions.length === 0 ? (
-            <div className="text-center py-4 text-sm text-gray-500 dark:text-gray-400">
-              {error}
-            </div>
-          ) : (
-            <>
-              {suggestions.map((suggestion) => {
-                const isSelected = selectedId === suggestion.id;
-                const isCopied = copiedId === suggestion.id;
-
-                return (
+        {isExpanded && (
+          <div className="space-y-2">
+            {error ? (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{error}</p>
+                <button
+                  onClick={handleRefresh}
+                  className="mt-2 text-xs text-red-700 hover:text-red-800 underline"
+                >
+                  Try again
+                </button>
+              </div>
+            ) : waitingForSentiment ? (
+              <div className="p-4 text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-blue-500 mr-2" />
+                  <span className="text-sm text-blue-600">Analyzing sentiment...</span>
+                </div>
+                <p className="text-xs text-gray-500">
+                  Waiting for sentiment analysis to complete before generating suggestions
+                </p>
+              </div>
+            ) : suggestions.length === 0 && !loading ? (
+              <div className="p-4 text-center">
+                <p className="text-sm text-gray-500">Start chatting to get AI suggestions!</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {suggestions.map((suggestion) => (
                   <div
                     key={suggestion.id}
-                    className={`relative p-4 rounded-lg border transition-all duration-300 bg-blue-50 dark:bg-blue-900/2 
-                      border-blue-200 dark:border-blue-800 ${
-                      isSelected ? 'scale-[0.98] opacity-70' : 'hover:shadow-md'
+                    className={`p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition-all duration-200 ${
+                      selectedId === suggestion.id ? 'ring-2 ring-blue-500 bg-blue-50' : ''
                     }`}
                   >
-                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 leading-relaxed">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs px-2 py-1 rounded-full ${getToneColor(suggestion.tone)}`}>
+                          {getToneIcon(suggestion.tone)} {suggestion.tone}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {Math.round(suggestion.confidence * 100)}% confidence
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleCopy(suggestion)}
+                          className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+                          title="Copy to clipboard"
+                        >
+                          {copiedId === suggestion.id ? (
+                            <span className="text-xs text-green-600">✓</span>
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </button>
+                        
+                        <button
+                          onClick={() => handleSend(suggestion)}
+                          className="p-1.5 text-purple-600 hover:text-purple-700 transition-colors"
+                          title="Send this message"
+                        >
+                          <Send className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <p className="text-sm text-gray-700 leading-relaxed">
                       {suggestion.content}
                     </p>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleCopy(suggestion)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                          isCopied
-                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                        }`}
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                        {isCopied ? 'Copied!' : 'Copy'}
-                      </button>
-                      <button
-                        onClick={() => handleSend(suggestion)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:shadow-md active:scale-95`}
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                        Send
-                      </button>
-                    </div>
                   </div>
-                );
-              })}
+                ))}
+              </div>
+            )}
 
-              <button
-                onClick={fetchSuggestions}
-                disabled={loading}
-                className="w-full py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
-              >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                Generate New Suggestions
-              </button>
-            </>
-          )}
-        </div>
+            {loading && !waitingForSentiment && (
+              <div className="flex items-center justify-center p-4">
+                <Loader2 className="w-4 h-4 animate-spin text-gray-400 mr-2" />
+                <span className="text-sm text-gray-500">Generating suggestions...</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
