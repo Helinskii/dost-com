@@ -152,14 +152,21 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages })
 
   // Analyze sentiments via API
   const analyzeSentiments = useCallback(async () => {
-    if (!chatId || messages.length === 0 || isAnalyzingRef.current || !isApiEnabled) return;
+    if (!chatId || messages.length === 0 || isAnalyzingRef.current) return;
+
+    // In mock mode, just generate random data
+    if (!isApiEnabled) {
+      generateRandomSentimentData();
+      setLastAnalyzedCount(messages.length);
+      return;
+    }
 
     isAnalyzingRef.current = true;
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:8000/predict', {
+      const response = await fetch('https://64db-141-148-200-181.ngrok-free.app/predict', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -206,37 +213,10 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages })
     return () => clearTimeout(timeoutId);
   }, [messages.length, chatId, analyzeSentiments, lastAnalyzedCount]);
 
-  // Setup random updates in mock mode
-  useEffect(() => {
-    if (!isApiEnabled && messages.length > 0) {
-      randomUpdateInterval.current = setInterval(() => {
-        generateRandomSentimentData();
-      }, 5000); // Update every 5 seconds in mock mode
-
-      return () => {
-        if (randomUpdateInterval.current) {
-          clearInterval(randomUpdateInterval.current);
-        }
-      };
-    } else {
-      if (randomUpdateInterval.current) {
-        clearInterval(randomUpdateInterval.current);
-        randomUpdateInterval.current = null;
-      }
-    }
-  }, [isApiEnabled, messages.length, generateRandomSentimentData]);
-
   // Toggle API mode
   const handleToggleApi = useCallback(() => {
-    setIsApiEnabled(prev => {
-      const newValue = !prev;
-      if (!newValue) {
-        // Switching to mock mode
-        generateRandomSentimentData();
-      }
-      return newValue;
-    });
-  }, [generateRandomSentimentData]);
+    setIsApiEnabled(prev => !prev);
+  }, []);
 
   // Get the dominant emotion for highlighting
   const dominantEmotion = getDominantEmotion();
