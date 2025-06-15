@@ -87,31 +87,17 @@ def rag(input, vectorstore):
         return {"error": f"Missing field: {e}"}
     except Exception as e:
         return {"error": str(e)}
-input = {
-    "chatId": "general",
-    "messages": [
-        {
-            "id": "51d179c4-1092-42e8-aed9-4cbb581a3106",
-            "content": "Shall we review the report?",
-            "user": {"name": "alice"},
-            "createdAt": "2025-06-14T12:17:35.825Z"
-        }
-    ],
-    "timestamp": "2025-06-14T12:17:36.842Z"
-}
-
-result = rag(input, vectorstore)
-print(result)
+    
 
 
-def call_llm(input_data, vectorstore):
+def call_rag(input_data, vectorstore):
     try:
         rag_result = rag(input_data, vectorstore)
 
         question = rag_result.get("Latest_Message", "")
         context_lines = rag_result.get("Context", [])
-
-        llmresponse = get_openai_rag_response(question, context_lines)
+        sentiments = json.dumps(input_data["sentiment"]["overallSentiment"]["emotional_scores"])
+        llmresponse = get_openai_rag_response(question, sentiments, context_lines)
 
         return {
             "Response": llmresponse
@@ -120,3 +106,43 @@ def call_llm(input_data, vectorstore):
     except Exception as e:
         return {"error": str(e)}
 
+#Expected input format
+# input =  {
+#     "username": "test",
+#     "chatHistory": {
+#         "chatId": "",
+#         "messages": [
+#             {
+#                 "id": "2d6fc6c6-b0e1-4c52-a101-28cf5909cb14",
+#                 "content": "How are you?",
+#                 "user": {
+#                     "name": "test"
+#                 },
+#                 "createdAt": "2025-06-13T15:16:04.980Z"
+#             }
+#         ],
+#         "timestamp": "2025-06-13T15:16:06.420Z"
+#     },
+#     "sentiment": {
+#         "overallSentiment": {
+#             "emotion_last_message": "joy",
+#             "emotional_scores": {
+#                 "sadness": 0,
+#                 "joy": 1,
+#                 "love": 0,
+#                 "anger": 0,
+#                 "fear": 0,
+#                 "unknown": 0
+#             }
+#         },
+#         "dominantEmotion": "joy",
+#         "trend": "stable",
+#         "isPositive": True,
+#         "messageSentiments": []
+#     },
+#     "timestamp": "2025-06-13T15:16:06.421Z"
+# }
+
+
+# result = rag(input, vectorstore)
+# print(result)
