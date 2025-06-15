@@ -22,7 +22,6 @@ function ChatPage() {
   
   // Refs for tracking
   const messagesRef = useRef<ChatMessage[]>([])
-  const sendMessageRef = useRef<((content: string) => void) | null>(null)
 
   // Use sentiment context
   const {
@@ -31,6 +30,15 @@ function ChatPage() {
     getSentimentTrend,
     isPositiveSentiment
   } = useSentiment()
+
+  const {
+    messages: realtimeMessages,
+    sendMessage,
+    isConnected,
+  } = useRealtimeChat({
+    roomName,
+    username,
+  })
 
   const handleJoinChat = (e: React.FormEvent) => {
     e.preventDefault()
@@ -49,20 +57,10 @@ function ChatPage() {
     }
   }, [])
 
-  // Store the sendMessage function from RealtimeChat
-  const handleSendMessageRef = useCallback((sendMessageFn: (content: string) => void) => {
-    sendMessageRef.current = sendMessageFn
-  }, [])
-
   // Handle sending messages from AI suggestions
   const handleSendMessage = useCallback((messageContent: string) => {
     console.log('Sending AI suggestion:', messageContent)
-    
-    if (sendMessageRef.current) {
-      sendMessageRef.current(messageContent)
-    } else {
-      console.warn('Send message function not available')
-    }
+    sendMessage(messageContent);
   }, [])
 
   if (showArchitecture) {
@@ -228,7 +226,6 @@ function ChatPage() {
               roomName={roomName}
               username={username}
               onMessage={handleMessageUpdate}
-              onSendMessageRef={handleSendMessageRef}
             />
           </div>
           
