@@ -6,7 +6,10 @@ import { useRef, useState, useCallback } from "react"
 import SentimentSidebar from "./sentiment"
 import { ChatMessage } from "@/hooks/use-realtime-chat"
 import AIResponseSuggestions from "./ai-response-suggestions"
+import ArchitectureDiagram from './architecture'
 import { SentimentProvider, useSentiment } from "@/hooks/use-sentiment-analysis"
+import { Info, X, ChevronRight, Sparkles } from "lucide-react"
+
 
 // Main Chat Component (wrapped with context)
 function ChatPage() {
@@ -15,6 +18,7 @@ function ChatPage() {
   const [hasJoined, setHasJoined] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [showSidebar, setShowSidebar] = useState(true)
+  const [showArchitecture, setShowArchitecture] = useState(false)
   
   // Refs for tracking
   const messagesRef = useRef<ChatMessage[]>([])
@@ -61,10 +65,26 @@ function ChatPage() {
     }
   }, [])
 
+  if (showArchitecture) {
+    return <ArchitectureDiagram onClose={() => setShowArchitecture(false)} />
+  }
+
   if (!hasJoined) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
+          {/* Architecture Button - Prominent at the top */}
+          <button
+            onClick={() => setShowArchitecture(true)}
+            className="mb-4 w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-purple-700 hover:to-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-3 group"
+          >
+            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center group-hover:rotate-12 transition-transform">
+              <Info className="w-5 h-5" />
+            </div>
+            <span className="text-lg">Explore Our Architecture</span>
+            <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          </button>
+
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-200">
             <div className="text-center mb-8">
               <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
@@ -112,10 +132,26 @@ function ChatPage() {
               </button>
             </form>
             
-            <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
-              <p className="text-sm text-blue-700">
-                <strong>Features:</strong> Real-time chat with AI sentiment analysis and response suggestions
-              </p>
+            <div className="mt-6 space-y-4">
+              <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
+                <p className="text-sm text-blue-700">
+                  <strong>Features:</strong> Real-time chat with AI sentiment analysis and response suggestions
+                </p>
+              </div>
+              
+              {/* Tech Stack Preview */}
+              <div className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl border border-purple-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-4 h-4 text-purple-600" />
+                  <p className="text-sm font-semibold text-purple-700">Powered by cutting-edge tech:</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <span className="text-xs px-2 py-1 bg-white rounded-full text-gray-600">React</span>
+                  <span className="text-xs px-2 py-1 bg-white rounded-full text-gray-600">WebSockets</span>
+                  <span className="text-xs px-2 py-1 bg-white rounded-full text-gray-600">AI/ML</span>
+                  <span className="text-xs px-2 py-1 bg-white rounded-full text-gray-600">LLM API</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -140,12 +176,19 @@ function ChatPage() {
             <span className={`px-3 py-1 rounded-full text-xs font-medium ${
               isPositiveSentiment() 
                 ? 'bg-green-100 text-green-800' 
-                : 'bg-gray-100 text-gray-600'
+                : 'bg-orange-100 text-orange-800'
             }`}>
-              {getDominantEmotion()} · {getSentimentTrend()}
+              {getDominantEmotion().toUpperCase()} • {getSentimentTrend()}
             </span>
           </div>
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowArchitecture(true)}
+              className="text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              title="View Architecture"
+            >
+              <Info className="w-5 h-5" />
+            </button>
             <button
               onClick={() => setShowSidebar(!showSidebar)}
               className="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
@@ -166,7 +209,7 @@ function ChatPage() {
               {showSidebar ? 'Hide' : 'Show'} Sentiment Analysis
             </button>
             <span className="text-sm text-gray-600">
-              Logged in as: <strong>{username}</strong>
+              Hello, <span className="font-medium">{username}</span>
             </span>
             <button 
               onClick={() => setHasJoined(false)} 
@@ -177,7 +220,7 @@ function ChatPage() {
           </div>
         </div>
       </header>
-      
+
       <div className="flex-1 flex overflow-hidden">
         <main className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 overflow-hidden">
@@ -195,7 +238,7 @@ function ChatPage() {
             onSendMessage={handleSendMessage}
           />
         </main>
-        
+
         <div
           className={`transition-all duration-300 ease-in-out ${
             showSidebar ? 'w-80' : 'w-0'
@@ -213,8 +256,8 @@ function ChatPage() {
   )
 }
 
-// Export wrapped component
-export default function Page() {
+// Main App Component with Provider
+export default function App() {
   return (
     <SentimentProvider>
       <ChatPage />
