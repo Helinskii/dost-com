@@ -4,7 +4,7 @@ import type React from "react"
 import { RealtimeChat } from "@/components/realtime-chat"
 import { useRef, useState, useCallback } from "react"
 import SentimentSidebar from "./sentiment"
-import { ChatMessage } from "@/hooks/use-realtime-chat"
+import { ChatMessage, useRealtimeChat } from "@/hooks/use-realtime-chat"
 import AIResponseSuggestions from "./ai-response-suggestions"
 import ArchitectureDiagram from './architecture'
 import { SentimentProvider, useSentiment } from "@/hooks/use-sentiment-analysis"
