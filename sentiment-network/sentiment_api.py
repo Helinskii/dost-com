@@ -20,7 +20,8 @@ class User(BaseModel):
 class Message(BaseModel):
     id: str
     content: str
-    user: str
+    user: User
+    createdAt: str
 
 class ChatPayload(BaseModel):
     chatId: str
