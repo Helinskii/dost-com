@@ -7,12 +7,6 @@ import requests
 
 load_dotenv()
 
-
-
-############Uncomment this for OpenAI LLMs############
-
-
-
 ## Builds the prompt for the LLM using the recent message and context history
 def build_rag_prompt(recent_entry, context_history):
 
@@ -78,20 +72,11 @@ Guidelines:
 ############Uncomment this for OpenAI LLMs###########
 def get_openai_rag_response(recent_entry, context_history):
 
-    prompt = build_rag_prompt(recent_entry, context_history)
-
     ############Uncomment this for OpenAI LLMs############
     openai.api_key = os.getenv("OPENAI_API_KEY")
     MODEL_NAME = "gpt-4o-mini"
 
-    ###########Uncomment this For Ollama LLMs############
-    # OLLAMA_URL = "http://localhost:11434/api/generate"
-    # MODEL_NAME = "tinyllama"
-
-    ############Uncomment this for HuggingFace LLMs########
-    # MODEL_NAME = "distilgpt2"
-    # tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-    # model = AutoModelForCausalLM.from_pretrained(MODEL_NAME).to("cpu")
+    prompt = build_rag_prompt(recent_entry, context_history)
     
     response = openai.chat.completions.create(
         model=MODEL_NAME,
@@ -102,11 +87,23 @@ def get_openai_rag_response(recent_entry, context_history):
         temperature=0.7,
         max_tokens=250,
     )
-    return response.choices[0].message.content.strip()
+    raw_text = response.choices[0].message.content.strip()
+
+    suggestions = [
+        line.strip().replace('\n', ' ')
+        for line in raw_text.split('\n\n')
+        if line.strip()
+    ]
+
+    return suggestions[:3]  # Return only the first 3 suggestions
 
 
 ##########Uncomment this for Ollama LLMs#############
 # def get_tinyllama_rag_response(recent_entry, context_history):
+
+#     OLLAMA_URL = "http://localhost:11434/api/generate"
+#     MODEL_NAME = "tinyllama"
+
 #     prompt = build_rag_prompt(recent_entry, context_history)
 
 #     response = requests.post(OLLAMA_URL, json={
@@ -116,25 +113,45 @@ def get_openai_rag_response(recent_entry, context_history):
 #     })
 
 #     if response.status_code == 200:
-#         return response.json()['response'].strip()
+#         raw_text = response.json()['response'].strip()
+
+#         Split and clean suggestions
+#         suggestions = [
+#           line.strip().replace('\n', ' ')
+#           for line in raw_text.split('\n\n')
+#           if line.strip()
+#         ]
+#         return suggestions[:3]  # Return only the first 3 suggestions
 #     else:
 #         return f"Error: {response.status_code} - {response.text}"
 
 
 ##########Uncomment this for HuggingFace LLMs##########
 # def get_hf_rag_response(recent_entry, context_history, max_tokens=100):
-#     prompt = build_rag_prompt(recent_entry, context_history)
-#     inputs = tokenizer(prompt, return_tensors="pt")
 
-#     output = model.generate(
+#     MODEL_NAME = "distilgpt2"
+#     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+#     model = AutoModelForCausalLM.from_pretrained(MODEL_NAME).to("cpu")
+#     model.eval()
+#     prompt = build_rag_prompt(recent_entry, context_history)
+#     inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=1024)
+#     with torch.no_grad():
+#         output = model.generate(
 #         **inputs,
-#         max_new_tokens=100,
+#         max_new_tokens=max_tokens,
 #         do_sample=True,
 #         temperature=0.7,
 #         top_k=50,
-#         top_p=0.95
+#         top_p=0.95,
+#         pad_token_id=tokenizer.eos_token_id
 #     )
 
 #     decoded = tokenizer.decode(output[0], skip_special_tokens=True)
-#     # Return only the new content after the prompt
-#     return decoded[len(prompt):].strip()
+
+#     # Remove prompt from beginning of decoded output
+#     generated = decoded[len(prompt):].strip()
+
+#     # Split suggestions by line or double newline
+#     suggestions = [line.strip() for line in generated.split('\n') if line.strip()]
+
+#     return suggestions
