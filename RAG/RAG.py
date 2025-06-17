@@ -1,22 +1,16 @@
 import json
-from fastapi import FastAPI, UploadFile
-from fastapi.params import File
-from fastapi.responses import JSONResponse
-from datetime import datetime
-from langchain.schema.runnable import RunnablePassthrough
-from langchain.schema.output_parser import StrOutputParser
-from langchain import hub
-
-from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
-from langchain_ollama import ChatOllama
+from langchain_community.embeddings import HuggingFaceEmbeddings
 import warnings
 warnings.filterwarnings("ignore")
 
-app = FastAPI()
+from llm_handler import get_openai_rag_response
 
 
+# 1. Load embedding model (used for query embedding)
 embedding = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+
+# 2. Load existing Chroma vectorstore
 vectorstore = Chroma(
     collection_name="chat_messages",
     embedding_function=embedding,
@@ -24,64 +18,131 @@ vectorstore = Chroma(
     collection_metadata={"hnsw:space": "cosine"}
 )
 
-prompt = hub.pull("rlm/rag-prompt")
-llm = ChatOllama(model="llama2", temperature=0)
 
-def format_docs(docs):
-    return "\n\n".join(doc.page_content for doc in docs)
+SIMILARITY_THRESHOLD = 0.8
 
-rag_chain = (
-    {"context": vectorstore.as_retriever(search_kwargs={"k": 5}) | format_docs,
-     "question": RunnablePassthrough()}
-    | prompt
-    | llm
-    | StrOutputParser()
-)
+# def dbinsert(input):
 
-@app.post("/rag")
-async def rag(file: UploadFile = File(...)):
+def rag(input, vectorstore):
     try:
-        content = await file.read()
-        data = json.loads(content)
-
-        message = data["chatHistory"]["messages"][0]
+        # Extract message and metadata
+        message = input["chatHistory"]["messages"][0]
         question = message["content"].strip().lower()
+        input_message = message["content"].strip()
+        username = message["user"]["name"] 
+        sentiments = {
+            "sentiments": input["sentiment"]["overallSentiment"]["emotional_scores"]
+        }
+        sentiments_str = json.dumps(sentiments)
+        latest_message = f"{{\"Sender\": \"{username}\", \"Message\": \"{question}\", {sentiments_str}}}"
 
 
+        # Retrieve similar documents
         results = vectorstore.similarity_search_with_score(question, k=5)
-        SIMILARITY_THRESHOLD = 0.8 
 
         relevant_docs = []
-
-        print("\n--- DEBUG: Retrieved documents and scores ---")
         for doc, score in results:
-            print(f"Score: {score:.4f} | Content: {doc.page_content.strip()}")
             if score is not None and score < SIMILARITY_THRESHOLD:
                 relevant_docs.append(doc)
 
         if not relevant_docs:
             return {
-                "Question": question,
-                "Context": [],
-                "Answer": "unknown"
+                "Latest_Message": latest_message,
+                "Context": []
             }
 
+        # Format context lines
         context_lines = []
         for doc in relevant_docs:
-            msg_content = doc.page_content.strip()
-            emotion = doc.metadata.get("dominantEmotion", "unknown")
-            context_line = f"{msg_content} emotions: {emotion}"
-            context_lines.append(context_line)
+            raw = doc.page_content.strip()
 
-        response = rag_chain.invoke(question)
+            try:
+                parts = raw.split(" ", 2)
+                if len(parts) == 3 and ":" in parts[2]:
+                    speaker, msg = parts[2].split(":", 1)
+                    context_lines.append({
+                        "sender": speaker.strip(),
+                        "message": msg.strip(),
+                        "sentiment": doc.metadata.get("dominantEmotion", "unknown")
+                    })
+                else:
+                    context_lines.append({
+                        "sender": "",
+                        "message": raw,
+                        "sentiment": doc.metadata.get("dominantEmotion", "unknown")
+                    })
+            except Exception:
+                context_lines.append({
+                    "sender": "",
+                    "message": raw,
+                    "sentiment": doc.metadata.get("dominantEmotion", "unknown")
+                })
 
         return {
-            "Question": question,
-            "Context": context_lines,
-            "Answer": response
+            "Latest_Message": latest_message,
+            "Context": context_lines
         }
 
     except KeyError as e:
-        return JSONResponse(status_code=400, content={"error": f"Missing field: {e}"})
+        return {"error": f"Missing field: {e}"}
     except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
+        return {"error": str(e)}
+    
+
+
+def call_rag(input_data, vectorstore):
+    try:
+        rag_result = rag(input_data, vectorstore)
+
+        question = rag_result.get("Latest_Message", "")
+        context_lines = rag_result.get("Context", [])
+        sentiments = json.dumps(input_data["sentiment"]["overallSentiment"]["emotional_scores"])
+        llmresponse = get_openai_rag_response(question, sentiments, context_lines)
+
+        return {
+            "Response": llmresponse
+              }
+
+    except Exception as e:
+        return {"error": str(e)}
+
+#Expected input format
+# input =  {
+#     "username": "test",
+#     "chatHistory": {
+#         "chatId": "",
+#         "messages": [
+#             {
+#                 "id": "2d6fc6c6-b0e1-4c52-a101-28cf5909cb14",
+#                 "content": "How are you?",
+#                 "user": {
+#                     "name": "test"
+#                 },
+#                 "createdAt": "2025-06-13T15:16:04.980Z"
+#             }
+#         ],
+#         "timestamp": "2025-06-13T15:16:06.420Z"
+#     },
+#     "sentiment": {
+#         "overallSentiment": {
+#             "emotion_last_message": "joy",
+#             "emotional_scores": {
+#                 "sadness": 0,
+#                 "joy": 1,
+#                 "love": 0,
+#                 "anger": 0,
+#                 "fear": 0,
+#                 "unknown": 0
+#             }
+#         },
+#         "dominantEmotion": "joy",
+#         "trend": "stable",
+#         "isPositive": True,
+#         "messageSentiments": []
+#     },
+#     "timestamp": "2025-06-13T15:16:06.421Z"
+# }
+
+
+# result = rag(input, vectorstore)
+# print(result)

@@ -1,24 +1,17 @@
 import openai
 import os
 from dotenv import load_dotenv
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
+import requests
 
-###########Uncomment this For Ollama LLMs############
-# import requests
-# OLLAMA_URL = "http://localhost:11434/api/generate"
-# MODEL_NAME = "tinyllama"
+load_dotenv()
 
 
-############Uncomment this for HuggingFace LLMs########
-# from transformers import AutoModelForCausalLM, AutoTokenizer
-# import torch
-# MODEL_NAME = "distilgpt2"
-# tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-# model = AutoModelForCausalLM.from_pretrained(MODEL_NAME).to("cpu")
 
 ############Uncomment this for OpenAI LLMs############
-load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
-MODEL_NAME = "gpt-4o-mini"
+
+
 
 ## Builds the prompt for the LLM using the recent message and context history
 def build_rag_prompt(recent_entry, context_history):
@@ -38,7 +31,7 @@ def build_rag_prompt(recent_entry, context_history):
             for entry in context_history if entry['sender'] == username
         )
     else:
-        own_context = "(No prior messages from current user)"
+        own_context = []    
 
     # Filter context to exclude the user's own messages
     if context_history:
@@ -47,7 +40,7 @@ def build_rag_prompt(recent_entry, context_history):
             for entry in context_history if entry['sender'] != username
         )
     else:
-        others_context = "(No messages from other users)"
+        others_context = []
 
     prompt = f"""
 
@@ -84,8 +77,22 @@ Guidelines:
 
 ############Uncomment this for OpenAI LLMs###########
 def get_openai_rag_response(recent_entry, context_history):
+
     prompt = build_rag_prompt(recent_entry, context_history)
 
+    ############Uncomment this for OpenAI LLMs############
+    openai.api_key = os.getenv("OPENAI_API_KEY")
+    MODEL_NAME = "gpt-4o-mini"
+
+    ###########Uncomment this For Ollama LLMs############
+    # OLLAMA_URL = "http://localhost:11434/api/generate"
+    # MODEL_NAME = "tinyllama"
+
+    ############Uncomment this for HuggingFace LLMs########
+    # MODEL_NAME = "distilgpt2"
+    # tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+    # model = AutoModelForCausalLM.from_pretrained(MODEL_NAME).to("cpu")
+    
     response = openai.chat.completions.create(
         model=MODEL_NAME,
         messages=[
