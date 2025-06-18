@@ -46,7 +46,7 @@ hist1={
       "user": {
         "name": "god"
       },
-      "sentiment": {"sadness": 1, "joy": 0, "love": 0, "anger": 0, "fear": 0, "surprise": 0},
+      "sentiment": "sadness",
       "createdAt": "2025-06-07T11:28:57.676Z"
     }
   ],
@@ -62,7 +62,7 @@ hist2={
       "user": {
         "name": "test"
       },
-      "sentiment": {"sadness": 0, "joy": 1, "love": 0, "anger": 0, "fear": 0, "surprise": 0},
+      "sentiment": "joy",
       "createdAt": "2025-06-07T11:29:07.095Z"
     }
   ],
@@ -77,7 +77,7 @@ hist3={
       "createdAt": "2025-06-07T11:29:16.624Z",
       "id": "87b12e2b-6b8f-4562-ad65-487280d8e0aa",
       "user": {"name": "god"},
-      "sentiment": {"sadness": 0, "joy": 0, "love": 1, "anger": 0, "fear": 0, "surprise": 0},
+      "sentiment": "love",
     }
   ],
   "timestamp": "2025-06-07T11:29:18.624Z"
@@ -126,11 +126,17 @@ def sentiment_analytics(chat_hist, buffers):
     last_msg = chat_hist['messages'][-1]
     last_usr = last_msg['user']['name']
     new_emo = np.zeros(len(emo2id))
-    for key, val in last_msg['sentiment'].items():
-        # val = np.random.rand(1,) * (emo_high[key] - emo_low[key]) + emo_low[key]
-        new_emo[emo2id[key]] = val
+    ### Shubham: Instead of a one-hot array, passing only valid sentiment
+    # for key, val in last_msg['sentiment'].items():
+    #     # val = np.random.rand(1,) * (emo_high[key] - emo_low[key]) + emo_low[key]
+    #     new_emo[emo2id[key]] = val
+    emo = last_msg['sentiment']
+    new_emo[emo2id[emo]] = 1
 
     new_emo /= np.sum(new_emo)
+
+    # DEBUG
+    print(f"New Emotion Var: {new_emo}")
     
     if os.path.exists("user_dist.pkl"):
         with open('user_dist.pkl', 'rb') as f:
