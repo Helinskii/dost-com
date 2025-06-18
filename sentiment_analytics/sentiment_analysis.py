@@ -167,7 +167,8 @@ def sentiment_analytics(chat_hist, buffers):
     
     var = np.diag(cov_new)
     std_dev = np.sqrt(var)
-    user_emo_dist[last_usr]['coeffvar'] = np.where(mu_new != 0, std_dev / mu_new, np.nan)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        user_emo_dist[last_usr]['coeffvar'] = np.where(mu_new != 0, std_dev / mu_new, np.nan)
     user_emo_dist[last_usr]["hist"].append(new_emo)
     if len(user_emo_dist[last_usr]["hist"]) > max(buffers):
         user_emo_dist[last_usr]["hist"].pop(0)
@@ -183,7 +184,8 @@ def sentiment_analytics(chat_hist, buffers):
         var = np.diag(user_emo_dist[last_usr]['cov_{}'.format(buffer)])
         std_dev = np.sqrt(var)
         mean = user_emo_dist[last_usr]['mu_{}'.format(buffer)]
-        user_emo_dist[last_usr]['coeffvar_{}'.format(buffer)] = np.where(mean != 0, std_dev / mean, np.nan)
+        with np.errstate(divide='ignore', invalid='ignore'):
+          user_emo_dist[last_usr]['coeffvar_{}'.format(buffer)] = np.where(mean != 0, std_dev / mean, np.nan)
 
     if np.mean(user_emo_dist[last_usr]['coeffvar_{}'.format(max(buffers))]) > 0.75 and len(user_emo_dist[last_usr]['hist']) == max(buffers):
         user_emo_dist[last_usr]['volatile'] = 1
