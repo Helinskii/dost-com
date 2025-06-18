@@ -7,7 +7,7 @@ import warnings
 from urllib3.exceptions import NotOpenSSLWarning
 warnings.filterwarnings("ignore", category=NotOpenSSLWarning)
 
-# model_path = "TinyBERT_General_4L_312D/checkpoint-10000"
+# model_path = "TinyBERT_General_4L_312D_full_128/checkpoint-3000"
 model_path = "mobilebert_emotion_token128"
 # model_path = "distilbert-base-uncased_full_128/checkpoint-2000"
 
@@ -44,5 +44,3 @@ def predict_compl_emotion(messages):
     emotion_score = {e: round((count / total), 2) for e, count in emotion_counts.items()}
 
     return emotion_score, text_emotion
-    
-    
