@@ -30,14 +30,8 @@ def rag(input, vectorstore):
         question = message["content"].strip().lower()
         input_message = message["content"].strip()
         username = message["user"]["name"] 
-        sentiments = {
-            "sentiments": input["sentiment"]["overallSentiment"]["emotional_scores"]
-        }
-        sentiments_str = json.dumps(sentiments)
-        latest_message = f"{{\"Sender\": \"{username}\", \"Message\": \"{question}\", {sentiments_str}}}"
+        latest_message = f"{{\"Sender\": \"{username}\", \"Message\": \"{question}\", \"Sentiment\": {json.dumps(input['sentiment']['overallSentiment']['emotional_scores'])}}}"
 
-
-        # Retrieve similar documents
         results = vectorstore.similarity_search_with_score(question, k=5)
 
         relevant_docs = []
@@ -50,8 +44,7 @@ def rag(input, vectorstore):
                 "Latest_Message": latest_message,
                 "Context": []
             }
-
-        # Format context lines
+            
         context_lines = []
         for doc in relevant_docs:
             raw = doc.page_content.strip()
@@ -96,8 +89,7 @@ def call_rag(input_data, vectorstore):
 
         question = rag_result.get("Latest_Message", "")
         context_lines = rag_result.get("Context", [])
-        sentiments = json.dumps(input_data["sentiment"]["overallSentiment"]["emotional_scores"])
-        llmresponse = get_openai_rag_response(question, sentiments, context_lines)
+        llmresponse = get_openai_rag_response(question, context_lines)
 
         return {
             "Response": llmresponse
