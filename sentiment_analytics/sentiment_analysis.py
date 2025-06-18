@@ -224,33 +224,33 @@ id2emo = {
     5: 'surprise'
 }
 
-user_emo_dist = sentiment_analytics(hist1, [10])
-user_emo_dist = sentiment_analytics(hist2, [10])
-user_emo_dist = sentiment_analytics(hist3, [10])
+# user_emo_dist = sentiment_analytics(hist1, [10])
+# user_emo_dist = sentiment_analytics(hist2, [10])
+# user_emo_dist = sentiment_analytics(hist3, [10])
 
-for user, values in user_emo_dist.items():
-    print(user, ' mu: ', values['mu'])
-    # print(user, ' cov: ', values['cov'])
-    print(user, ' coeffvar: ', values['coeffvar'])
-    print(user, ' mu_10: ', values['mu_10'])
-    print(user, ' coeffvar_10: ', values['coeffvar_10'])
-    print(user, ' volatile: ', values['volatile'])
-    # print(user, ': ', values['cov_10'])
-    print(user, ' hist: ', (values['hist']))
+# for user, values in user_emo_dist.items():
+#     print(user, ' mu: ', values['mu'])
+#     # print(user, ' cov: ', values['cov'])
+#     print(user, ' coeffvar: ', values['coeffvar'])
+#     print(user, ' mu_10: ', values['mu_10'])
+#     print(user, ' coeffvar_10: ', values['coeffvar_10'])
+#     print(user, ' volatile: ', values['volatile'])
+#     # print(user, ': ', values['cov_10'])
+#     print(user, ' hist: ', (values['hist']))
 
-    # NOTES:
-    # user = '__GrOuP__' provides group statistics
-    # for trend: plot the hist (size = max(buffers)) OR track last 'n' values['mu']
-    # for session trend: keep appending values['mu'] to the plot
-    # use below code as reference for accessing instances of sentiment
-    '''
-    sentiment = {}
-    for probs in values['mu']:
+# NOTES:
+# user = '__GrOuP__' provides group statistics
+# for trend: plot the hist (size = max(buffers)) OR track last 'n' values['mu']
+# for session trend: keep appending values['mu'] to the plot
+# use below code as reference for accessing instances of sentiment
+'''
+sentiment = {}
+for probs in values['mu']:
+    sentiment[id2emo[id]] = prob
+print(sentiment)
+sentiment = {}
+for probs in values['hist']:
+    for id, prob in enumerate(probs):
         sentiment[id2emo[id]] = prob
-    print(sentiment)
-    sentiment = {}
-    for probs in values['hist']:
-        for id, prob in enumerate(probs):
-            sentiment[id2emo[id]] = prob
-    print(sentiment)
-    '''
+print(sentiment)
+'''
