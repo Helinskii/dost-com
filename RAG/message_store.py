@@ -9,26 +9,47 @@ from chromadb.config import Settings
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
 chroma_client = chromadb.PersistentClient(path="chroma_store")
-collection = chroma_client.get_or_create_collection(name="chat_messages", metadata={"hnsw:space": "cosine"})
+collection = chroma_client.get_or_create_collection(name="chat_inputs_test2", metadata={"hnsw:space": "cosine"})
 
-# Message:
+# Message Example:
 '''
 {
-    "id": "51d179c4-1092-42e8-aed9-4cbb581a3106",
-    "content": "Hi",
-    "user_name": "RoboGod",
-    "createdAt": "2025-06-14T12:17:35.825Z"
+  "chatId": "general",
+  "messages": [
+    {
+      "id": "353fc390-3afe-49a4-a88a-64a32aed0c85",
+      "content": "What's going on?",
+      "user": {
+        "name": "test"
+      },
+      "sentiment": <Emotion>,
+      "createdAt": "2025-06-07T11:29:07.095Z"
+    }
+  ],
+  "timestamp": "2025-06-07T11:29:18.624Z"
 }
 '''
 
+def preprocess_message(message):
+    content = message["content"]
+    created_at = message["createdAt"]
+    dt = datetime.fromisoformat(created_at.replace("Z", "+00:00"))  # Handle ISO timestamp with Zulu time
+    formatted_dt = dt.strftime('%Y-%m-%d %H:%M:%S')
+    username = message["user"]["name"]
+    combined_text = f"{formatted_dt} {username}: {content}"
+    return combined_text
+
 def message_store(message):
-    # message is a dict with keys: id, content, user_name, createdAt
-    embedding = model.encode(message["content"]).tolist()
+    emotion = message["sentiment"]
+    combined_text = preprocess_message(message)
+    print(combined_text)
+    embedding = model.encode(combined_text).tolist()
     doc_id = message["id"]
     metadata = {
         "id": message["id"],
-        "user_name": message["user_name"],
-        "timestamp": message["createdAt"][:19].replace("T", " ")
+        "user_name": message["user"]["name"],
+        "timestamp": message["createdAt"][:19].replace("T", " "),
+        "sentiment": emotion
     }
     collection.add(
         ids=[doc_id],
@@ -37,11 +58,27 @@ def message_store(message):
         metadatas=[metadata]
     )
 
-dummy_message = {
-    "id": "51d179c4-1092-42e8-aed9-4cbb581a3106",
-    "content": "Hi",
-    "user_name": "RoboGod",
-    "createdAt": "2025-06-14T12:17:35.825Z"
-}
+# dummy_message = {
+#     "id": "353fc391-3afe-49a4-a88a-64a32aed0c85",
+#     "content": "What's going on?",
+#     "user": {
+#         "name": "test"
+#     },
+#     "sentiment": "joy",
+#     "createdAt": "2025-06-07T11:29:07.095Z"
+# }
 
-message_store(dummy_message)
+# message_store(dummy_message)
+
+# Store example conversation in JSON format in 
+# DB to check RAG
+json_path = "chat_jsonformat.json"
+with open(json_path, "r") as f:
+    data = json.load(f)
+
+for idx, entry in enumerate(data):
+    message = entry["chatHistory"]["messages"][0]
+    sentiment = entry["sentiment"]["overallSentiment"]["emotion_last_message"]
+    message["sentiment"] = sentiment
+    # print(message)
+    message_store(message)

@@ -1,9 +1,12 @@
 import json
+import sys
+import os
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 import warnings
 warnings.filterwarnings("ignore")
 
+sys.path.append(os.path.abspath('../llm_context'))
 from llm_handler import get_openai_rag_response
 
 
@@ -12,7 +15,7 @@ embedding = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L
 
 # 2. Load existing Chroma vectorstore
 vectorstore = Chroma(
-    collection_name="chat_messages",
+    collection_name="chat_inputs_test2",
     embedding_function=embedding,
     persist_directory="chroma_store",
     collection_metadata={"hnsw:space": "cosine"}
@@ -23,16 +26,13 @@ SIMILARITY_THRESHOLD = 0.8
 
 # def dbinsert(input):
 
-def rag(input, vectorstore):
+def rag(message, vectorstore):
     try:
-        # Extract message and metadata
-        message = input["chatHistory"]["messages"][0]
-        question = message["content"].strip().lower()
-        input_message = message["content"].strip()
+        last_message = message["content"].strip().lower()
         username = message["user"]["name"] 
-        latest_message = f"{{\"Sender\": \"{username}\", \"Message\": \"{question}\", \"Sentiment\": {json.dumps(input['sentiment']['overallSentiment']['emotional_scores'])}}}"
+        latest_message = f"{{\"Sender\": \"{username}\", \"Message\": \"{last_message}\", \"Sentiment\": {json.dumps(message['sentiment'])}}}"
 
-        results = vectorstore.similarity_search_with_score(question, k=5)
+        results = vectorstore.similarity_search_with_score(last_message, k=5)
 
         relevant_docs = []
         for doc, score in results:
@@ -45,6 +45,8 @@ def rag(input, vectorstore):
                 "Context": []
             }
             
+        # print(relevant_docs)
+
         context_lines = []
         for doc in relevant_docs:
             raw = doc.page_content.strip()
@@ -56,19 +58,19 @@ def rag(input, vectorstore):
                     context_lines.append({
                         "sender": speaker.strip(),
                         "message": msg.strip(),
-                        "sentiment": doc.metadata.get("dominantEmotion", "unknown")
+                        "sentiment": doc.metadata.get("sentiment", "unknown")
                     })
                 else:
                     context_lines.append({
                         "sender": "",
                         "message": raw,
-                        "sentiment": doc.metadata.get("dominantEmotion", "unknown")
+                        "sentiment": doc.metadata.get("sentiment", "unknown")
                     })
             except Exception:
                 context_lines.append({
                     "sender": "",
                     "message": raw,
-                    "sentiment": doc.metadata.get("dominantEmotion", "unknown")
+                    "sentiment": doc.metadata.get("sentiment", "unknown")
                 })
 
         return {
@@ -98,43 +100,16 @@ def call_rag(input_data, vectorstore):
     except Exception as e:
         return {"error": str(e)}
 
-#Expected input format
-# input =  {
-#     "username": "test",
-#     "chatHistory": {
-#         "chatId": "",
-#         "messages": [
-#             {
-#                 "id": "2d6fc6c6-b0e1-4c52-a101-28cf5909cb14",
-#                 "content": "How are you?",
-#                 "user": {
-#                     "name": "test"
-#                 },
-#                 "createdAt": "2025-06-13T15:16:04.980Z"
-#             }
-#         ],
-#         "timestamp": "2025-06-13T15:16:06.420Z"
-#     },
-#     "sentiment": {
-#         "overallSentiment": {
-#             "emotion_last_message": "joy",
-#             "emotional_scores": {
-#                 "sadness": 0,
-#                 "joy": 1,
-#                 "love": 0,
-#                 "anger": 0,
-#                 "fear": 0,
-#                 "unknown": 0
-#             }
-#         },
-#         "dominantEmotion": "joy",
-#         "trend": "stable",
-#         "isPositive": True,
-#         "messageSentiments": []
-#     },
-#     "timestamp": "2025-06-13T15:16:06.421Z"
-# }
+# Expected input format
+dummy_message = {
+    "id": "353fc391-3afe-49a4-a88a-64a32aed0c85",
+    "content": "I feel sad today",
+    "user": {
+        "name": "Morrie"
+    },
+    "sentiment": "sadness",
+    "createdAt": "2025-06-07T11:29:07.095Z"
+}
 
-
-# result = rag(input, vectorstore)
-# print(result)
+result = rag(dummy_message, vectorstore)
+print(result)
