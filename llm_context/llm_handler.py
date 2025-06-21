@@ -10,13 +10,13 @@ load_dotenv()
 ## Builds the prompt for the LLM using the recent message and context history
 def build_rag_prompt(recent_entry, context_history):
 
-    username = recent_entry['sender']
-    message = recent_entry['message']
+    username = recent_entry['Sender']
+    message = recent_entry['Message']
     
     # Convert probabilities to percentages and sort
-    sentiment_scores = recent_entry.get("sentiment", {})
-    sorted_sentiments = sorted(sentiment_scores.items(), key=lambda x: x[1], reverse=True)
-    sentiment_text = ", ".join([f"{k}: {round(v * 100)}%" for k, v in sorted_sentiments]) or "No dominant emotion detected"
+    emotion_detected = recent_entry.get("Sentiment", {})
+    # sorted_sentiments = sorted(sentiment_scores.items(), key=lambda x: x[1], reverse=True)
+    # sentiment_text = ", ".join([f"{k}: {round(v * 100)}%" for k, v in sorted_sentiments]) or "No dominant emotion detected"
 
     # Filter context to include the user's own messages
     if context_history:
@@ -44,13 +44,13 @@ The current user's name is: {username}
 Your task is to Understand the emotional tone and context, and Generate kind and constructive messages that someone else in the group chat can respond with.
 
 Take into account:
-- The emotional profile of the recent message
+- The emotion of the recent message
 - The user's own past messages to understand what they're going through
 - Other users' past responses to maintain coherence and empathy
 
 ### Recent Message from {username}:
 {message}  
-Emotional Profile: {sentiment_text}
+Emotion: {emotion_detected}
 
 ### {username}'s Previous Messages:
 {own_context}
@@ -87,7 +87,8 @@ def get_openai_rag_response(recent_entry, context_history):
         temperature=0.7,
         max_tokens=250,
     )
-    raw_text = response.choices[0].message.content.strip()
+    content = response.choices[0].message.content
+    raw_text = content.strip() if content is not None else ""
 
     suggestions = [
         line.strip().replace('\n', ' ')

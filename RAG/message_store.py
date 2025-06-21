@@ -9,7 +9,7 @@ from chromadb.config import Settings
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
 chroma_client = chromadb.PersistentClient(path="chroma_store")
-collection = chroma_client.get_or_create_collection(name="chat_inputs_test2", metadata={"hnsw:space": "cosine"})
+collection = chroma_client.get_or_create_collection(name="chat_inputs_test3", metadata={"hnsw:space": "cosine"})
 
 # Message Example:
 '''
@@ -54,7 +54,7 @@ def message_store(message):
     collection.add(
         ids=[doc_id],
         embeddings=[embedding],
-        documents=[message["content"]],
+        documents=[combined_text],
         metadatas=[metadata]
     )
 
@@ -70,15 +70,15 @@ def message_store(message):
 
 # message_store(dummy_message)
 
-# Store example conversation in JSON format in 
-# DB to check RAG
-json_path = "chat_jsonformat.json"
-with open(json_path, "r") as f:
-    data = json.load(f)
+# Store example conversation in JSON format in DB to check RAG
+# json_path = "chat_jsonformat.json"
+# with open(json_path, "r") as f:
+#     data = json.load(f)
 
-for idx, entry in enumerate(data):
-    message = entry["chatHistory"]["messages"][0]
-    sentiment = entry["sentiment"]["overallSentiment"]["emotion_last_message"]
-    message["sentiment"] = sentiment
-    # print(message)
-    message_store(message)
+# for idx, entry in enumerate(data):
+#     message = entry["chatHistory"]["messages"][0]
+#     sentiment = entry["sentiment"]["overallSentiment"]["emotion_last_message"]
+#     message["sentiment"] = sentiment
+#     ## DEBUG
+#     print(message)
+#     message_store(message)
