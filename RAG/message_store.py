@@ -42,7 +42,7 @@ def preprocess_message(message):
 def message_store(message):
     emotion = message["sentiment"]
     combined_text = preprocess_message(message)
-    print(combined_text)
+    print(f"Text Stored: {combined_text}\tEmotion: {emotion}")
     embedding = model.encode(combined_text).tolist()
     doc_id = message["id"]
     metadata = {

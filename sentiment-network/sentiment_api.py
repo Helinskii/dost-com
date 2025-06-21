@@ -92,9 +92,10 @@ def respond(input: ChatPayload):
 @app.post("/clear_db")
 async def clear_database():
     try:
+        collection_name = "chat_inputs"
         chroma_client = chromadb.PersistentClient(path="chroma_store")
         chroma_client.delete_collection("chat_inputs")
-        return JSONResponse(status_code=200, content={"message": "Chroma DB 'chat_messages' collection cleared."})
+        return JSONResponse(status_code=200, content={"message": f"Chroma DB '{collection_name}' collection cleared."})
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
     
