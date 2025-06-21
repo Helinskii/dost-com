@@ -28,6 +28,58 @@ Potential Dataset - [Kaggle Data Set](https://www.kaggle.com/datasets/parulpande
 ## Potential Scope
 - *Add RAG based context retrieval for entire chat in order to reduce LLM API payload size (tokens)*
 
+
+# Information for Reference
+
+## Web-UI API Payload Format
+```
+{
+  "chatId": "general",
+      "messages": [
+          {
+              "id": "51d179c4-1092-42e8-aed9-4cbb581a3106",
+              "content": "Hi",
+              "user": {
+                  "name": "god"
+              },
+              "createdAt": "2025-06-14T12:17:35.825Z"
+          }
+      ],
+      "timestamp": "2025-06-14T12:17:36.842Z"
+}
+```
+## RAG Vector Input Format
+```
+{
+    "id": "353fc390-3afe-49a4-a88a-64a32aed0c85",
+    "content": "What's going on?",
+    "user": {
+        "name": "test"
+    },
+    "sentiment": "joy",
+    "createdAt": "2025-06-07T11:29:07.095Z"
+}
+```
+
+## Sentiment Analytics Format Expectation
+```
+{
+  "chatId": "general",
+  "messages": [
+    {
+      "id": "353fc390-3afe-49a4-a88a-64a32aed0c85",
+      "content": "What's going on?",
+      "user": {
+        "name": "test"
+      },
+      "sentiment": <Emotion>,
+      "createdAt": "2025-06-07T11:29:07.095Z"
+    }
+  ],
+  "timestamp": "2025-06-07T11:29:18.624Z"
+}
+```
+
 ## Vercel Web-UI
 
 # Link to Application -> [Dost-Com](https://dostcom.vercel.app/)

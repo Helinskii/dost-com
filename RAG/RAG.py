@@ -141,5 +141,5 @@ dummy_message = {
 #     print(f"Contex {i}: {context}")
 #     i+=1
 
-rag_response = call_rag(dummy_message, vectorstore)
-print(rag_response)
+# rag_response = call_rag(dummy_message, vectorstore)
+# print(rag_response)

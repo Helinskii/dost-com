@@ -9,7 +9,7 @@ from chromadb.config import Settings
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
 chroma_client = chromadb.PersistentClient(path="chroma_store")
-collection = chroma_client.get_or_create_collection(name="chat_inputs_test3", metadata={"hnsw:space": "cosine"})
+collection = chroma_client.get_or_create_collection(name="chat_inputs", metadata={"hnsw:space": "cosine"})
 
 # Message Example:
 '''

@@ -2,11 +2,19 @@ import sys
 import os
 
 sys.path.append(os.path.abspath('../sentiment_analytics'))
+sys.path.append(os.path.abspath('../RAG'))
 
 from sentiment_analysis import sentiment_analytics
 from sentiment_infer import predict_emotion, predict_compl_emotion
+from RAG import rag, call_rag
+from message_store import message_store
+import chromadb
+
+from langchain_community.vectorstores import Chroma
+from langchain_community.embeddings import HuggingFaceEmbeddings
 
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -50,7 +58,7 @@ def predict(input: ChatPayload):
 def analyse(input: ChatPayload):
     last_message = input.messages[-1].content if input.messages else ""
     emotion_last_msg = predict_emotion(last_message)
-    analysis_arg = input.dict()
+    analysis_arg = input.model_dump()
     analysis_arg['messages'][0]['sentiment'] = emotion_last_msg
     
     user_emo_dist = sentiment_analytics(analysis_arg, [10])
@@ -58,9 +66,37 @@ def analyse(input: ChatPayload):
 
     return user_emo_dist
 
-# @app.post("/rag")
-# def respond(input: ChatPayLoad):
-#     last_message = input.messages[-1].content if input.messages else ""
+@app.post("/rag")
+def respond(input: ChatPayload):
+    embedding = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    vectorstore = Chroma(
+        collection_name="chat_inputs",
+        embedding_function=embedding,
+        persist_directory="chroma_store",
+        collection_metadata={"hnsw:space": "cosine"}
+    )
+
+    last_message = input.messages[-1].content if input.messages else ""
+    emotion_last_msg = predict_emotion(last_message)
+    rag_arg = input.model_dump()
+    rag_arg = rag_arg['messages'][0]
+    rag_arg['sentiment'] = emotion_last_msg
+    # DEBUG
+    # print(f"RAG Function Arg: {rag_arg}")
+    rag_response = call_rag(rag_arg, vectorstore)
+    print(rag_response)
+    message_store(rag_arg)
+    
+    return rag_response
+
+@app.post("/clear_db")
+async def clear_database():
+    try:
+        chroma_client = chromadb.PersistentClient(path="chroma_store")
+        chroma_client.delete_collection("chat_inputs")
+        return JSONResponse(status_code=200, content={"message": "Chroma DB 'chat_messages' collection cleared."})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
     
 
 ## UTILS
