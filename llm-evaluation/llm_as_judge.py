@@ -1,6 +1,7 @@
 """
 LLM-as-Judge Evaluation System for Chat Response Suggestions
 A comprehensive evaluation framework for comparing LLM performance in generating chat suggestions
+Modified version with sentiment probabilities and positivity scoring
 """
 
 import json
@@ -22,6 +23,12 @@ from collections import defaultdict
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
+import os
+from dotenv import load_dotenv
+import google.generativeai as genai
+
+# Load environment variables
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -30,13 +37,41 @@ logger = logging.getLogger(__name__)
 # ============== Data Models ==============
 
 @dataclass
+class ChatMessage:
+    """Represents a single chat message"""
+    id: str
+    content: str
+    user_name: str
+    created_at: str
+
+@dataclass
+class SentimentProbabilities:
+    """Sentiment probabilities for each emotion"""
+    sadness: float
+    joy: float
+    love: float
+    anger: float
+    fear: float
+    unknown: float
+    
+    def get_dominant(self) -> str:
+        """Get the dominant emotion"""
+        emotions = {
+            'sadness': self.sadness,
+            'joy': self.joy,
+            'love': self.love,
+            'anger': self.anger,
+            'fear': self.fear,
+            'unknown': self.unknown
+        }
+        return max(emotions, key=emotions.get)
+
+@dataclass
 class ChatContext:
     """Represents the context for generating response suggestions"""
-    chat_history: List[Dict[str, str]]
-    current_message: str
-    rag_context: Optional[str] = None
-    sentiment: Optional[str] = None
-    emotional_indicators: Optional[List[str]] = None
+    chat_history: List[ChatMessage]
+    current_user: str
+    sentiment_probabilities: SentimentProbabilities
 
 @dataclass
 class ResponseSuggestions:
@@ -46,6 +81,7 @@ class ResponseSuggestions:
     suggestion_3: str
     model_name: str
     generation_time: float
+    prompt_variant: str  # Which prompt variant was used
 
 @dataclass
 class EvaluationMetrics:
@@ -54,6 +90,7 @@ class EvaluationMetrics:
     sentiment_alignment: float
     naturalness: float
     helpfulness: float
+    positivity_impact: float  # New metric for mood lifting
     safety: str
     safety_notes: Optional[str] = None
 
@@ -66,6 +103,7 @@ class EvaluationResult:
     diversity_score: float
     best_suggestion: int
     overall_quality: float
+    overall_positivity_score: float  # New overall metric
     reasoning: str
     evaluation_time: float
     judge_model: str
@@ -88,8 +126,10 @@ class LLMProvider(ABC):
 class OpenAIProvider(LLMProvider):
     """OpenAI API provider"""
     
-    def __init__(self, api_key: str, model: str = "gpt-4-turbo-preview"):
-        self.api_key = api_key
+    def __init__(self, model: str = "gpt-4-turbo-preview"):
+        self.api_key = os.getenv("OPENAI_API_KEY")
+        if not self.api_key:
+            raise ValueError("OPENAI_API_KEY not found in environment variables")
         self.model = model
         self.base_url = "https://api.openai.com/v1/chat/completions"
     
@@ -117,8 +157,10 @@ class OpenAIProvider(LLMProvider):
 class AnthropicProvider(LLMProvider):
     """Anthropic Claude API provider"""
     
-    def __init__(self, api_key: str, model: str = "claude-3-opus-20240229"):
-        self.api_key = api_key
+    def __init__(self, model: str = "claude-3-opus-20240229"):
+        self.api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not self.api_key:
+            raise ValueError("ANTHROPIC_API_KEY not found in environment variables")
         self.model = model
         self.base_url = "https://api.anthropic.com/v1/messages"
     
@@ -144,6 +186,114 @@ class AnthropicProvider(LLMProvider):
     def get_name(self) -> str:
         return self.model
 
+class GeminiProvider(LLMProvider):
+    """Google Gemini API provider"""
+    
+    def __init__(self, model: str = "gemini-1.5-pro"):
+        self.api_key = os.getenv("GOOGLE_API_KEY")
+        if not self.api_key:
+            raise ValueError("GOOGLE_API_KEY not found in environment variables")
+        genai.configure(api_key=self.api_key)
+        self.model = genai.GenerativeModel(model)
+        self.model_name = model
+    
+    async def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 500) -> str:
+        generation_config = {
+            "temperature": temperature,
+            "max_output_tokens": max_tokens,
+        }
+        
+        # Gemini API is synchronous, so we'll run it in executor
+        import asyncio
+        loop = asyncio.get_event_loop()
+        
+        def _generate():
+            response = self.model.generate_content(
+                prompt,
+                generation_config=generation_config
+            )
+            return response.text
+        
+        return await loop.run_in_executor(None, _generate)
+    
+    def get_name(self) -> str:
+        return self.model_name
+
+# ============== Prompt Variants ==============
+
+class PromptVariants:
+    """Different prompt styles for testing"""
+    
+    @staticmethod
+    def get_base_prompt() -> str:
+        """Base prompt with all features"""
+        return """You are a helpful assistant providing response suggestions for a chat application.
+
+The current user's name is: {username}
+
+Your task is to generate response suggestions for {username}, based only on messages from other participants in the chat history.  
+Use {username}'s previous messages as context to maintain coherence and avoid repetition, but do not generate responses to their own messages.
+
+CURRENT SENTIMENT (0-100): {dominant}  
+The sentiment reflects the emotional tone of the entire conversation and should be used to guide de-escalation and promote a positive, relationship-preserving response.
+
+CONTEXT:
+{context}
+
+Generate 1-3 short response suggestions (max 150 characters each) from {username}'s perspective that:
+- Respond directly and appropriately to other participants' most recent messages
+- De-escalate tension and promote a positive tone
+- Show empathy, understanding, or warmth
+- Help preserve or improve the relationship
+- Make the other person feel heard and better
+
+Provide only the suggestions, one per line, without numbering."""
+
+    @staticmethod
+    def get_no_positivity_prompt() -> str:
+        """Prompt without positivity requirements"""
+        return """You are a helpful assistant providing response suggestions for a chat application.
+
+The current user's name is: {username}
+
+Your task is to generate response suggestions for {username}, based only on messages from other participants in the chat history.  
+Use {username}'s previous messages as context to maintain coherence and avoid repetition, but do not generate responses to their own messages.
+
+CURRENT SENTIMENT (0-100): {dominant}  
+The sentiment reflects the emotional tone of the entire conversation.
+
+CONTEXT:
+{context}
+
+Generate 1-3 short response suggestions (max 150 characters each) from {username}'s perspective that:
+- Respond directly and appropriately to other participants' most recent messages
+- Are contextually relevant and natural
+- Maintain the conversation flow
+
+Provide only the suggestions, one per line, without numbering."""
+
+    @staticmethod
+    def get_no_sentiment_prompt() -> str:
+        """Prompt without sentiment information"""
+        return """You are a helpful assistant providing response suggestions for a chat application.
+
+The current user's name is: {username}
+
+Your task is to generate response suggestions for {username}, based only on messages from other participants in the chat history.  
+Use {username}'s previous messages as context to maintain coherence and avoid repetition, but do not generate responses to their own messages.
+
+CONTEXT:
+{context}
+
+Generate 1-3 short response suggestions (max 150 characters each) from {username}'s perspective that:
+- Respond directly and appropriately to other participants' most recent messages
+- De-escalate tension and promote a positive tone
+- Show empathy, understanding, or warmth
+- Help preserve or improve the relationship
+- Make the other person feel heard and better
+
+Provide only the suggestions, one per line, without numbering."""
+
 # ============== Suggestion Generator ==============
 
 class SuggestionGenerator:
@@ -151,11 +301,16 @@ class SuggestionGenerator:
     
     def __init__(self, provider: LLMProvider):
         self.provider = provider
+        self.prompt_variants = {
+            'base': PromptVariants.get_base_prompt(),
+            'no_positivity': PromptVariants.get_no_positivity_prompt(),
+            'no_sentiment': PromptVariants.get_no_sentiment_prompt()
+        }
     
-    async def generate_suggestions(self, context: ChatContext) -> ResponseSuggestions:
+    async def generate_suggestions(self, context: ChatContext, prompt_variant: str = 'base') -> ResponseSuggestions:
         """Generate three response suggestions based on context"""
         
-        prompt = self._build_generation_prompt(context)
+        prompt = self._build_generation_prompt(context, prompt_variant)
         start_time = time.time()
         
         try:
@@ -163,45 +318,50 @@ class SuggestionGenerator:
             suggestions = self._parse_suggestions(response)
             generation_time = time.time() - start_time
             
+            # Ensure we have exactly 3 suggestions
+            while len(suggestions) < 3:
+                suggestions.append(suggestions[-1] if suggestions else "I understand.")
+            suggestions = suggestions[:3]
+            
             return ResponseSuggestions(
                 suggestion_1=suggestions[0],
                 suggestion_2=suggestions[1],
                 suggestion_3=suggestions[2],
                 model_name=self.provider.get_name(),
-                generation_time=generation_time
+                generation_time=generation_time,
+                prompt_variant=prompt_variant
             )
         except Exception as e:
             logger.error(f"Error generating suggestions: {e}")
             raise
     
-    def _build_generation_prompt(self, context: ChatContext) -> str:
+    def _build_generation_prompt(self, context: ChatContext, prompt_variant: str) -> str:
         """Build the prompt for suggestion generation"""
         
-        chat_history_str = "\n".join([
-            f"{msg['role']}: {msg['content']}" 
-            for msg in context.chat_history[-5:]  # Last 5 messages
+        # Format chat history
+        context_str = "\n".join([
+            f"{msg.created_at} - {msg.user_name}: {msg.content}"
+            for msg in context.chat_history[-10:]  # Last 10 messages
         ])
         
-        prompt = f"""Generate 3 different response suggestions for the user in this chat.
-
-Chat History:
-{chat_history_str}
-
-Current Message: {context.current_message}
-
-{'RAG Context: ' + context.rag_context if context.rag_context else ''}
-{'Sentiment: ' + context.sentiment if context.sentiment else ''}
-
-Generate 3 diverse, natural responses that:
-1. Are contextually relevant
-2. Match the conversation tone
-3. Move the conversation forward
-4. Are each distinctly different approaches
-
-Format your response as:
-SUGGESTION_1: [first suggestion]
-SUGGESTION_2: [second suggestion]
-SUGGESTION_3: [third suggestion]"""
+        # Get dominant sentiment
+        dominant_emotion = context.sentiment_probabilities.get_dominant()
+        dominant_score = getattr(context.sentiment_probabilities, dominant_emotion) * 100
+        
+        prompt_template = self.prompt_variants[prompt_variant]
+        
+        # Handle different prompt variants
+        if prompt_variant == 'no_sentiment':
+            prompt = prompt_template.format(
+                username=context.current_user,
+                context=context_str
+            )
+        else:
+            prompt = prompt_template.format(
+                username=context.current_user,
+                dominant=f"{dominant_emotion.upper()} ({dominant_score:.0f})",
+                context=context_str
+            )
         
         return prompt
     
@@ -211,16 +371,15 @@ SUGGESTION_3: [third suggestion]"""
         lines = response.strip().split('\n')
         
         for line in lines:
-            if line.startswith('SUGGESTION_'):
-                suggestion = line.split(':', 1)[1].strip()
-                suggestions.append(suggestion)
+            line = line.strip()
+            if line and not line.startswith(('1.', '2.', '3.', '-', '*')):
+                suggestions.append(line)
+            elif line.startswith(('1.', '2.', '3.')):
+                suggestions.append(line[2:].strip())
+            elif line.startswith(('-', '*')):
+                suggestions.append(line[1:].strip())
         
-        # Fallback if parsing fails
-        if len(suggestions) != 3:
-            logger.warning("Failed to parse exactly 3 suggestions, using fallback")
-            suggestions = response.strip().split('\n')[:3]
-        
-        return suggestions
+        return suggestions[:3]
 
 # ============== LLM Judge ==============
 
@@ -240,17 +399,20 @@ class LLMJudge:
 {chat_history}
 </chat_history>
 
-<current_message>
-{current_message}
-</current_message>
-
-<rag_context>
-{rag_context}
-</rag_context>
+<current_user>
+{current_user}
+</current_user>
 
 <sentiment_analysis>
-Overall sentiment: {sentiment}
-Emotional indicators: {emotional_indicators}
+Sentiment Probabilities:
+- Sadness: {sadness}%
+- Joy: {joy}%
+- Love: {love}%
+- Anger: {anger}%
+- Fear: {fear}%
+- Unknown: {unknown}%
+
+Dominant Emotion: {dominant_emotion}
 </sentiment_analysis>
 
 ## Response Suggestions to Evaluate:
@@ -262,12 +424,13 @@ Suggestion 3: {suggestion_3}
 
 Evaluate each suggestion on these dimensions:
 
-1. **Relevance (0-10)**: How well does the suggestion fit as a natural next response?
-2. **Sentiment Alignment (0-10)**: How well does the suggestion match the emotional tone?
+1. **Relevance (0-10)**: How well does the suggestion fit as a natural next response from {current_user}?
+2. **Sentiment Alignment (0-10)**: How well does the suggestion acknowledge and respond to the emotional tone?
 3. **Naturalness (0-10)**: Does this sound like something a real person would say?
 4. **Helpfulness (0-10)**: Does this suggestion move the conversation forward productively?
-5. **Safety Check**: Is the suggestion free from harmful content? (PASS/FAIL)
-6. **Diversity Assessment (0-10)**: Rate how different the three suggestions are from each other
+5. **Positivity Impact (0-10)**: Does this suggestion help lift the mood or de-escalate tension in a positive direction?
+6. **Safety Check**: Is the suggestion free from harmful content? (PASS/FAIL)
+7. **Diversity Assessment (0-10)**: Rate how different the three suggestions are from each other
 
 ## Output Format:
 
@@ -280,6 +443,7 @@ Provide your evaluation in this exact JSON format:
     "sentiment_alignment": 9,
     "naturalness": 7,
     "helpfulness": 8,
+    "positivity_impact": 9,
     "safety": "PASS",
     "safety_notes": null
   },
@@ -288,6 +452,7 @@ Provide your evaluation in this exact JSON format:
     "sentiment_alignment": 8,
     "naturalness": 9,
     "helpfulness": 7,
+    "positivity_impact": 7,
     "safety": "PASS",
     "safety_notes": null
   },
@@ -296,12 +461,14 @@ Provide your evaluation in this exact JSON format:
     "sentiment_alignment": 7,
     "naturalness": 8,
     "helpfulness": 9,
+    "positivity_impact": 8,
     "safety": "PASS",
     "safety_notes": null
   },
   "diversity_score": 8,
   "best_suggestion": 3,
   "overall_quality": 8,
+  "overall_positivity_score": 8,
   "reasoning": "Brief explanation of your evaluation"
 }
 ```"""
@@ -328,18 +495,20 @@ Provide your evaluation in this exact JSON format:
         """Build the evaluation prompt"""
         
         chat_history_str = "\n".join([
-            f"{msg['role']}: {msg['content']}" 
-            for msg in context.chat_history[-5:]
+            f"{msg.created_at} - {msg.user_name}: {msg.content}"
+            for msg in context.chat_history[-10:]
         ])
-        
-        emotional_indicators_str = ", ".join(context.emotional_indicators) if context.emotional_indicators else "None"
         
         return self.judge_prompt_template.format(
             chat_history=chat_history_str,
-            current_message=context.current_message,
-            rag_context=context.rag_context or "None provided",
-            sentiment=context.sentiment or "Neutral",
-            emotional_indicators=emotional_indicators_str,
+            current_user=context.current_user,
+            sadness=context.sentiment_probabilities.sadness * 100,
+            joy=context.sentiment_probabilities.joy * 100,
+            love=context.sentiment_probabilities.love * 100,
+            anger=context.sentiment_probabilities.anger * 100,
+            fear=context.sentiment_probabilities.fear * 100,
+            unknown=context.sentiment_probabilities.unknown * 100,
+            dominant_emotion=context.sentiment_probabilities.get_dominant(),
             suggestion_1=suggestions.suggestion_1,
             suggestion_2=suggestions.suggestion_2,
             suggestion_3=suggestions.suggestion_3
@@ -370,6 +539,7 @@ Provide your evaluation in this exact JSON format:
             diversity_score=data['diversity_score'],
             best_suggestion=data['best_suggestion'],
             overall_quality=data['overall_quality'],
+            overall_positivity_score=data['overall_positivity_score'],
             reasoning=data['reasoning'],
             evaluation_time=evaluation_time,
             judge_model=self.provider.get_name()
@@ -384,43 +554,45 @@ class EvaluationPipeline:
         self.judge = LLMJudge(judge_provider)
         self.results_cache = []
     
-    async def evaluate_models(
+    async def evaluate_models_with_prompts(
         self, 
         test_contexts: List[ChatContext],
         model_providers: Dict[str, LLMProvider],
+        prompt_variants: List[str] = ['base', 'no_positivity', 'no_sentiment'],
         save_intermediate: bool = True
     ) -> pd.DataFrame:
-        """Evaluate multiple models on test contexts"""
+        """Evaluate multiple models with different prompt variants"""
         
         all_results = []
-        total_evaluations = len(test_contexts) * len(model_providers)
+        total_evaluations = len(test_contexts) * len(model_providers) * len(prompt_variants)
         completed = 0
         
         for context_idx, context in enumerate(test_contexts):
             logger.info(f"Processing context {context_idx + 1}/{len(test_contexts)}")
             
             for model_name, provider in model_providers.items():
-                logger.info(f"  Evaluating model: {model_name}")
-                
-                # Generate suggestions
-                generator = SuggestionGenerator(provider)
-                suggestions = await generator.generate_suggestions(context)
-                
-                # Evaluate suggestions
-                evaluation = await self.judge.evaluate(context, suggestions)
-                
-                # Store results
-                result_record = self._create_result_record(
-                    context_idx, context, suggestions, evaluation
-                )
-                all_results.append(result_record)
-                
-                completed += 1
-                logger.info(f"  Progress: {completed}/{total_evaluations} ({completed/total_evaluations*100:.1f}%)")
-                
-                # Save intermediate results
-                if save_intermediate and completed % 10 == 0:
-                    self._save_intermediate_results(all_results)
+                for prompt_variant in prompt_variants:
+                    logger.info(f"  Evaluating model: {model_name} with prompt: {prompt_variant}")
+                    
+                    # Generate suggestions
+                    generator = SuggestionGenerator(provider)
+                    suggestions = await generator.generate_suggestions(context, prompt_variant)
+                    
+                    # Evaluate suggestions
+                    evaluation = await self.judge.evaluate(context, suggestions)
+                    
+                    # Store results
+                    result_record = self._create_result_record(
+                        context_idx, context, suggestions, evaluation, prompt_variant
+                    )
+                    all_results.append(result_record)
+                    
+                    completed += 1
+                    logger.info(f"  Progress: {completed}/{total_evaluations} ({completed/total_evaluations*100:.1f}%)")
+                    
+                    # Save intermediate results
+                    if save_intermediate and completed % 10 == 0:
+                        self._save_intermediate_results(all_results)
         
         # Convert to DataFrame
         results_df = pd.DataFrame(all_results)
@@ -433,13 +605,15 @@ class EvaluationPipeline:
         context_idx: int,
         context: ChatContext,
         suggestions: ResponseSuggestions,
-        evaluation: EvaluationResult
+        evaluation: EvaluationResult,
+        prompt_variant: str
     ) -> Dict[str, Any]:
         """Create a flat record for DataFrame"""
         
         record = {
             'context_id': context_idx,
             'model_name': suggestions.model_name,
+            'prompt_variant': prompt_variant,
             'generation_time': suggestions.generation_time,
             'judge_model': evaluation.judge_model,
             'evaluation_time': evaluation.evaluation_time,
@@ -454,29 +628,38 @@ class EvaluationPipeline:
             'suggestion_1_sentiment': evaluation.suggestion_1_metrics.sentiment_alignment,
             'suggestion_1_naturalness': evaluation.suggestion_1_metrics.naturalness,
             'suggestion_1_helpfulness': evaluation.suggestion_1_metrics.helpfulness,
+            'suggestion_1_positivity': evaluation.suggestion_1_metrics.positivity_impact,
             'suggestion_1_safety': evaluation.suggestion_1_metrics.safety,
             
             'suggestion_2_relevance': evaluation.suggestion_2_metrics.relevance,
             'suggestion_2_sentiment': evaluation.suggestion_2_metrics.sentiment_alignment,
             'suggestion_2_naturalness': evaluation.suggestion_2_metrics.naturalness,
             'suggestion_2_helpfulness': evaluation.suggestion_2_metrics.helpfulness,
+            'suggestion_2_positivity': evaluation.suggestion_2_metrics.positivity_impact,
             'suggestion_2_safety': evaluation.suggestion_2_metrics.safety,
             
             'suggestion_3_relevance': evaluation.suggestion_3_metrics.relevance,
             'suggestion_3_sentiment': evaluation.suggestion_3_metrics.sentiment_alignment,
             'suggestion_3_naturalness': evaluation.suggestion_3_metrics.naturalness,
             'suggestion_3_helpfulness': evaluation.suggestion_3_metrics.helpfulness,
+            'suggestion_3_positivity': evaluation.suggestion_3_metrics.positivity_impact,
             'suggestion_3_safety': evaluation.suggestion_3_metrics.safety,
             
             # Overall metrics
             'diversity_score': evaluation.diversity_score,
             'best_suggestion': evaluation.best_suggestion,
             'overall_quality': evaluation.overall_quality,
+            'overall_positivity_score': evaluation.overall_positivity_score,
             'reasoning': evaluation.reasoning,
             
             # Context info
-            'sentiment': context.sentiment,
-            'has_rag_context': bool(context.rag_context),
+            'dominant_sentiment': context.sentiment_probabilities.get_dominant(),
+            'sentiment_sadness': context.sentiment_probabilities.sadness,
+            'sentiment_joy': context.sentiment_probabilities.joy,
+            'sentiment_love': context.sentiment_probabilities.love,
+            'sentiment_anger': context.sentiment_probabilities.anger,
+            'sentiment_fear': context.sentiment_probabilities.fear,
+            'sentiment_unknown': context.sentiment_probabilities.unknown,
             'chat_history_length': len(context.chat_history),
             'timestamp': datetime.now().isoformat()
         }
@@ -521,6 +704,8 @@ class ReportGenerator:
         self._create_safety_analysis(report_dir)
         self._create_time_analysis(report_dir)
         self._create_best_suggestion_analysis(report_dir)
+        self._create_positivity_analysis(report_dir)
+        self._create_prompt_variant_comparison(report_dir)
         
         # Generate text report
         self._generate_text_report(report_dir, summary_df)
@@ -529,37 +714,48 @@ class ReportGenerator:
         return report_dir
     
     def _generate_summary_statistics(self) -> pd.DataFrame:
-        """Generate summary statistics for each model"""
+        """Generate summary statistics for each model and prompt variant"""
         
-        metrics = ['relevance', 'sentiment', 'naturalness', 'helpfulness']
+        metrics = ['relevance', 'sentiment', 'naturalness', 'helpfulness', 'positivity']
         summary_data = []
         
         for model in self.results_df['model_name'].unique():
-            model_data = self.results_df[self.results_df['model_name'] == model]
-            
-            summary_row = {'model': model}
-            
-            # Average metrics across all suggestions
-            for metric in metrics:
-                cols = [f'suggestion_{i}_{metric}' for i in range(1, 4)]
-                all_scores = pd.concat([model_data[col] for col in cols])
-                summary_row[f'avg_{metric}'] = all_scores.mean()
-                summary_row[f'std_{metric}'] = all_scores.std()
-            
-            # Other metrics
-            summary_row['avg_diversity'] = model_data['diversity_score'].mean()
-            summary_row['avg_overall_quality'] = model_data['overall_quality'].mean()
-            summary_row['avg_generation_time'] = model_data['generation_time'].mean()
-            summary_row['safety_pass_rate'] = (model_data[[
-                'suggestion_1_safety', 'suggestion_2_safety', 'suggestion_3_safety'
-            ]] == 'PASS').values.mean()
-            
-            # Best suggestion distribution
-            best_counts = model_data['best_suggestion'].value_counts()
-            for i in range(1, 4):
-                summary_row[f'best_suggestion_{i}_rate'] = best_counts.get(i, 0) / len(model_data)
-            
-            summary_data.append(summary_row)
+            for variant in self.results_df['prompt_variant'].unique():
+                model_variant_data = self.results_df[
+                    (self.results_df['model_name'] == model) & 
+                    (self.results_df['prompt_variant'] == variant)
+                ]
+                
+                if len(model_variant_data) == 0:
+                    continue
+                
+                summary_row = {
+                    'model': model,
+                    'prompt_variant': variant
+                }
+                
+                # Average metrics across all suggestions
+                for metric in metrics:
+                    cols = [f'suggestion_{i}_{metric}' for i in range(1, 4)]
+                    all_scores = pd.concat([model_variant_data[col] for col in cols])
+                    summary_row[f'avg_{metric}'] = all_scores.mean()
+                    summary_row[f'std_{metric}'] = all_scores.std()
+                
+                # Other metrics
+                summary_row['avg_diversity'] = model_variant_data['diversity_score'].mean()
+                summary_row['avg_overall_quality'] = model_variant_data['overall_quality'].mean()
+                summary_row['avg_positivity_score'] = model_variant_data['overall_positivity_score'].mean()
+                summary_row['avg_generation_time'] = model_variant_data['generation_time'].mean()
+                summary_row['safety_pass_rate'] = (model_variant_data[[
+                    'suggestion_1_safety', 'suggestion_2_safety', 'suggestion_3_safety'
+                ]] == 'PASS').values.mean()
+                
+                # Best suggestion distribution
+                best_counts = model_variant_data['best_suggestion'].value_counts()
+                for i in range(1, 4):
+                    summary_row[f'best_suggestion_{i}_rate'] = best_counts.get(i, 0) / len(model_variant_data)
+                
+                summary_data.append(summary_row)
         
         return pd.DataFrame(summary_data)
     
@@ -568,17 +764,20 @@ class ReportGenerator:
         
         summary_df = self._generate_summary_statistics()
         
-        metrics = ['relevance', 'sentiment', 'naturalness', 'helpfulness', 'diversity', 'overall_quality']
+        # Group by model (averaging across prompt variants)
+        model_avg = summary_df.groupby('model').mean()
+        
+        metrics = ['avg_relevance', 'avg_sentiment', 'avg_naturalness', 
+                  'avg_helpfulness', 'avg_positivity', 'avg_diversity', 'avg_overall_quality']
         
         fig = go.Figure()
         
-        for model in summary_df['model']:
-            values = [summary_df[summary_df['model'] == model][f'avg_{metric}'].values[0] 
-                     for metric in metrics]
+        for model in model_avg.index:
+            values = [model_avg.loc[model, metric] for metric in metrics]
             
             fig.add_trace(go.Scatterpolar(
                 r=values,
-                theta=metrics,
+                theta=[m.replace('avg_', '').title() for m in metrics],
                 fill='toself',
                 name=model
             ))
@@ -599,24 +798,27 @@ class ReportGenerator:
     def _create_metric_distribution_plots(self, output_dir: Path):
         """Create distribution plots for each metric"""
         
-        metrics = ['relevance', 'sentiment', 'naturalness', 'helpfulness']
+        metrics = ['relevance', 'sentiment', 'naturalness', 'helpfulness', 'positivity']
         
         fig = make_subplots(
-            rows=2, cols=2,
-            subplot_titles=[f'{metric.capitalize()} Distribution' for metric in metrics]
+            rows=3, cols=2,
+            subplot_titles=[f'{metric.capitalize()} Distribution' for metric in metrics] + ['Overall Quality']
         )
         
-        for idx, metric in enumerate(metrics):
+        for idx, metric in enumerate(metrics + ['overall_quality']):
             row = idx // 2 + 1
             col = idx % 2 + 1
             
             for model in self.results_df['model_name'].unique():
                 model_data = self.results_df[self.results_df['model_name'] == model]
                 
-                # Combine scores from all suggestions
-                scores = []
-                for i in range(1, 4):
-                    scores.extend(model_data[f'suggestion_{i}_{metric}'].values)
+                if metric == 'overall_quality':
+                    scores = model_data['overall_quality'].values
+                else:
+                    # Combine scores from all suggestions
+                    scores = []
+                    for i in range(1, 4):
+                        scores.extend(model_data[f'suggestion_{i}_{metric}'].values)
                 
                 fig.add_trace(
                     go.Histogram(
@@ -630,37 +832,48 @@ class ReportGenerator:
                 )
         
         fig.update_layout(
-            height=800,
+            height=1000,
             title_text="Metric Score Distributions by Model",
             showlegend=True
         )
         
         fig.write_html(output_dir / "metric_distributions.html")
-        fig.write_image(output_dir / "metric_distributions.png", width=1200, height=800)
+        fig.write_image(output_dir / "metric_distributions.png", width=1200, height=1000)
     
     def _create_performance_heatmap(self, output_dir: Path):
         """Create performance heatmap"""
         
         summary_df = self._generate_summary_statistics()
         
-        metrics = ['avg_relevance', 'avg_sentiment', 'avg_naturalness', 
-                  'avg_helpfulness', 'avg_diversity', 'avg_overall_quality']
+        # Create separate heatmaps for each prompt variant
+        variants = summary_df['prompt_variant'].unique()
         
-        heatmap_data = summary_df[['model'] + metrics].set_index('model')
+        fig, axes = plt.subplots(1, len(variants), figsize=(6*len(variants), 8))
+        if len(variants) == 1:
+            axes = [axes]
         
-        plt.figure(figsize=(10, 6))
-        sns.heatmap(
-            heatmap_data.T,
-            annot=True,
-            fmt='.2f',
-            cmap='YlGnBu',
-            cbar_kws={'label': 'Score'},
-            vmin=0,
-            vmax=10
-        )
-        plt.title('Model Performance Heatmap')
-        plt.xlabel('Model')
-        plt.ylabel('Metric')
+        for idx, variant in enumerate(variants):
+            variant_data = summary_df[summary_df['prompt_variant'] == variant]
+            
+            metrics = ['avg_relevance', 'avg_sentiment', 'avg_naturalness', 
+                      'avg_helpfulness', 'avg_positivity', 'avg_diversity', 'avg_overall_quality']
+            
+            heatmap_data = variant_data[['model'] + metrics].set_index('model')
+            
+            sns.heatmap(
+                heatmap_data.T,
+                annot=True,
+                fmt='.2f',
+                cmap='YlGnBu',
+                cbar_kws={'label': 'Score'},
+                vmin=0,
+                vmax=10,
+                ax=axes[idx]
+            )
+            axes[idx].set_title(f'Performance Heatmap - {variant}')
+            axes[idx].set_xlabel('Model')
+            axes[idx].set_ylabel('Metric')
+        
         plt.tight_layout()
         plt.savefig(output_dir / "performance_heatmap.png", dpi=300, bbox_inches='tight')
         plt.close()
@@ -671,16 +884,24 @@ class ReportGenerator:
         safety_data = []
         
         for model in self.results_df['model_name'].unique():
-            model_data = self.results_df[self.results_df['model_name'] == model]
-            
-            for i in range(1, 4):
-                safety_col = f'suggestion_{i}_safety'
-                pass_rate = (model_data[safety_col] == 'PASS').mean()
-                safety_data.append({
-                    'model': model,
-                    'suggestion': f'Suggestion {i}',
-                    'pass_rate': pass_rate * 100
-                })
+            for variant in self.results_df['prompt_variant'].unique():
+                model_variant_data = self.results_df[
+                    (self.results_df['model_name'] == model) & 
+                    (self.results_df['prompt_variant'] == variant)
+                ]
+                
+                if len(model_variant_data) == 0:
+                    continue
+                
+                for i in range(1, 4):
+                    safety_col = f'suggestion_{i}_safety'
+                    pass_rate = (model_variant_data[safety_col] == 'PASS').mean()
+                    safety_data.append({
+                        'model': model,
+                        'prompt_variant': variant,
+                        'suggestion': f'Suggestion {i}',
+                        'pass_rate': pass_rate * 100
+                    })
         
         safety_df = pd.DataFrame(safety_data)
         
@@ -689,21 +910,22 @@ class ReportGenerator:
             x='model',
             y='pass_rate',
             color='suggestion',
-            title='Safety Pass Rates by Model and Suggestion',
+            facet_col='prompt_variant',
+            title='Safety Pass Rates by Model, Suggestion, and Prompt Variant',
             labels={'pass_rate': 'Pass Rate (%)', 'model': 'Model'},
             barmode='group'
         )
         
         fig.update_layout(yaxis_range=[0, 105])
         fig.write_html(output_dir / "safety_analysis.html")
-        fig.write_image(output_dir / "safety_analysis.png", width=1000, height=600)
+        fig.write_image(output_dir / "safety_analysis.png", width=1400, height=600)
     
     def _create_time_analysis(self, output_dir: Path):
         """Create time performance analysis"""
         
         fig = make_subplots(
             rows=1, cols=2,
-            subplot_titles=['Generation Time', 'Evaluation Time'],
+            subplot_titles=['Generation Time by Model', 'Evaluation Time'],
             specs=[[{"type": "box"}, {"type": "box"}]]
         )
         
@@ -745,16 +967,24 @@ class ReportGenerator:
         best_suggestion_data = []
         
         for model in self.results_df['model_name'].unique():
-            model_data = self.results_df[self.results_df['model_name'] == model]
-            
-            for position in [1, 2, 3]:
-                count = (model_data['best_suggestion'] == position).sum()
-                best_suggestion_data.append({
-                    'model': model,
-                    'position': f'Position {position}',
-                    'count': count,
-                    'percentage': (count / len(model_data)) * 100
-                })
+            for variant in self.results_df['prompt_variant'].unique():
+                model_variant_data = self.results_df[
+                    (self.results_df['model_name'] == model) & 
+                    (self.results_df['prompt_variant'] == variant)
+                ]
+                
+                if len(model_variant_data) == 0:
+                    continue
+                
+                for position in [1, 2, 3]:
+                    count = (model_variant_data['best_suggestion'] == position).sum()
+                    best_suggestion_data.append({
+                        'model': model,
+                        'prompt_variant': variant,
+                        'position': f'Position {position}',
+                        'count': count,
+                        'percentage': (count / len(model_variant_data)) * 100
+                    })
         
         best_df = pd.DataFrame(best_suggestion_data)
         
@@ -763,13 +993,144 @@ class ReportGenerator:
             x='model',
             y='percentage',
             color='position',
+            facet_col='prompt_variant',
             title='Best Suggestion Position Distribution',
             labels={'percentage': 'Percentage (%)', 'model': 'Model'},
             barmode='stack'
         )
         
         fig.write_html(output_dir / "best_suggestion_analysis.html")
-        fig.write_image(output_dir / "best_suggestion_analysis.png", width=1000, height=600)
+        fig.write_image(output_dir / "best_suggestion_analysis.png", width=1400, height=600)
+    
+    def _create_positivity_analysis(self, output_dir: Path):
+        """Create analysis of positivity impact scores"""
+        
+        # Positivity scores by sentiment
+        fig = make_subplots(
+            rows=2, cols=2,
+            subplot_titles=[
+                'Positivity Score by Model',
+                'Positivity vs Sentiment',
+                'Positivity by Prompt Variant',
+                'Positivity vs Overall Quality'
+            ]
+        )
+        
+        # 1. Box plot of positivity scores by model
+        for model in self.results_df['model_name'].unique():
+            model_data = self.results_df[self.results_df['model_name'] == model]
+            fig.add_trace(
+                go.Box(
+                    y=model_data['overall_positivity_score'],
+                    name=model
+                ),
+                row=1, col=1
+            )
+        
+        # 2. Scatter plot: positivity vs dominant sentiment
+        sentiment_colors = {
+            'sadness': 'blue',
+            'joy': 'yellow',
+            'love': 'pink',
+            'anger': 'red',
+            'fear': 'purple',
+            'unknown': 'gray'
+        }
+        
+        for sentiment in sentiment_colors:
+            sentiment_data = self.results_df[self.results_df['dominant_sentiment'] == sentiment]
+            fig.add_trace(
+                go.Scatter(
+                    x=sentiment_data['overall_quality'],
+                    y=sentiment_data['overall_positivity_score'],
+                    mode='markers',
+                    name=sentiment,
+                    marker_color=sentiment_colors[sentiment]
+                ),
+                row=1, col=2
+            )
+        
+        # 3. Positivity by prompt variant
+        for variant in self.results_df['prompt_variant'].unique():
+            variant_data = self.results_df[self.results_df['prompt_variant'] == variant]
+            fig.add_trace(
+                go.Box(
+                    y=variant_data['overall_positivity_score'],
+                    name=variant
+                ),
+                row=2, col=1
+            )
+        
+        # 4. Correlation between positivity and overall quality
+        fig.add_trace(
+            go.Scatter(
+                x=self.results_df['overall_quality'],
+                y=self.results_df['overall_positivity_score'],
+                mode='markers',
+                marker=dict(
+                    color=self.results_df['overall_quality'],
+                    colorscale='Viridis',
+                    showscale=True
+                ),
+                showlegend=False
+            ),
+            row=2, col=2
+        )
+        
+        fig.update_xaxes(title_text="Overall Quality", row=1, col=2)
+        fig.update_yaxes(title_text="Positivity Score", row=1, col=2)
+        fig.update_xaxes(title_text="Overall Quality", row=2, col=2)
+        fig.update_yaxes(title_text="Positivity Score", row=2, col=2)
+        
+        fig.update_layout(
+            height=800,
+            title_text="Positivity Impact Analysis"
+        )
+        
+        fig.write_html(output_dir / "positivity_analysis.html")
+        fig.write_image(output_dir / "positivity_analysis.png", width=1200, height=800)
+    
+    def _create_prompt_variant_comparison(self, output_dir: Path):
+        """Compare performance across prompt variants"""
+        
+        summary_df = self._generate_summary_statistics()
+        
+        # Create radar chart for each model showing prompt variant performance
+        models = summary_df['model'].unique()
+        
+        fig = make_subplots(
+            rows=1, cols=len(models),
+            subplot_titles=models,
+            specs=[[{"type": "polar"}] * len(models)]
+        )
+        
+        metrics = ['avg_relevance', 'avg_sentiment', 'avg_naturalness', 
+                  'avg_helpfulness', 'avg_positivity', 'avg_overall_quality']
+        
+        for idx, model in enumerate(models):
+            model_data = summary_df[summary_df['model'] == model]
+            
+            for _, row in model_data.iterrows():
+                values = [row[metric] for metric in metrics]
+                
+                fig.add_trace(
+                    go.Scatterpolar(
+                        r=values,
+                        theta=[m.replace('avg_', '').title() for m in metrics],
+                        fill='toself',
+                        name=row['prompt_variant']
+                    ),
+                    row=1, col=idx+1
+                )
+        
+        fig.update_layout(
+            height=500,
+            title_text="Prompt Variant Performance Comparison by Model",
+            showlegend=True
+        )
+        
+        fig.write_html(output_dir / "prompt_variant_comparison.html")
+        fig.write_image(output_dir / "prompt_variant_comparison.png", width=1800, height=500)
     
     def _generate_text_report(self, output_dir: Path, summary_df: pd.DataFrame):
         """Generate a text summary report"""
@@ -782,23 +1143,49 @@ class ReportGenerator:
             ""
         ]
         
-        # Best performing model
-        best_model = summary_df.loc[summary_df['avg_overall_quality'].idxmax(), 'model']
-        report_lines.append(f"**Best Overall Model**: {best_model}")
+        # Best performing model overall
+        best_model_data = summary_df.groupby('model')['avg_overall_quality'].mean()
+        best_model = best_model_data.idxmax()
+        report_lines.append(f"**Best Overall Model**: {best_model} (avg score: {best_model_data[best_model]:.2f})")
+        
+        # Best prompt variant
+        best_variant_data = summary_df.groupby('prompt_variant')['avg_overall_quality'].mean()
+        best_variant = best_variant_data.idxmax()
+        report_lines.append(f"**Best Prompt Variant**: {best_variant} (avg score: {best_variant_data[best_variant]:.2f})")
+        
+        # Best for positivity
+        best_positivity_data = summary_df.groupby('model')['avg_positivity_score'].mean()
+        best_positivity_model = best_positivity_data.idxmax()
+        report_lines.append(f"**Best for Positivity**: {best_positivity_model} (avg score: {best_positivity_data[best_positivity_model]:.2f})")
+        
         report_lines.append("")
         
-        # Model rankings
+        # Model rankings by metric
         report_lines.append("## Model Rankings by Metric")
         report_lines.append("")
         
-        metrics = ['relevance', 'sentiment', 'naturalness', 'helpfulness', 'diversity', 'overall_quality']
+        metrics = ['relevance', 'sentiment', 'naturalness', 'helpfulness', 'positivity', 'diversity', 'overall_quality']
         
         for metric in metrics:
-            col = f'avg_{metric}'
-            ranked = summary_df.sort_values(col, ascending=False)
+            col = f'avg_{metric}' if metric != 'overall_quality' else 'avg_overall_quality'
+            ranked = summary_df.groupby('model')[col].mean().sort_values(ascending=False)
             report_lines.append(f"### {metric.capitalize()}")
-            for idx, row in ranked.iterrows():
-                report_lines.append(f"{idx + 1}. {row['model']}: {row[col]:.2f}")
+            for idx, (model, score) in enumerate(ranked.items()):
+                report_lines.append(f"{idx + 1}. {model}: {score:.2f}")
+            report_lines.append("")
+        
+        # Prompt variant analysis
+        report_lines.append("## Prompt Variant Analysis")
+        report_lines.append("")
+        
+        for variant in summary_df['prompt_variant'].unique():
+            variant_data = summary_df[summary_df['prompt_variant'] == variant]
+            avg_quality = variant_data['avg_overall_quality'].mean()
+            avg_positivity = variant_data['avg_positivity_score'].mean()
+            
+            report_lines.append(f"### {variant}")
+            report_lines.append(f"- Average Quality: {avg_quality:.2f}")
+            report_lines.append(f"- Average Positivity: {avg_positivity:.2f}")
             report_lines.append("")
         
         # Performance insights
@@ -806,27 +1193,29 @@ class ReportGenerator:
         report_lines.append("")
         
         # Speed analysis
-        fastest_model = summary_df.loc[summary_df['avg_generation_time'].idxmin(), 'model']
-        slowest_model = summary_df.loc[summary_df['avg_generation_time'].idxmax(), 'model']
+        speed_data = summary_df.groupby('model')['avg_generation_time'].mean()
+        fastest_model = speed_data.idxmin()
+        slowest_model = speed_data.idxmax()
         
-        report_lines.append(f"**Fastest Model**: {fastest_model} "
-                          f"({summary_df.loc[summary_df['model'] == fastest_model, 'avg_generation_time'].values[0]:.2f}s avg)")
-        report_lines.append(f"**Slowest Model**: {slowest_model} "
-                          f"({summary_df.loc[summary_df['model'] == slowest_model, 'avg_generation_time'].values[0]:.2f}s avg)")
+        report_lines.append(f"**Fastest Model**: {fastest_model} ({speed_data[fastest_model]:.2f}s avg)")
+        report_lines.append(f"**Slowest Model**: {slowest_model} ({speed_data[slowest_model]:.2f}s avg)")
         report_lines.append("")
         
         # Safety analysis
         report_lines.append("### Safety Analysis")
-        for _, row in summary_df.iterrows():
-            report_lines.append(f"- {row['model']}: {row['safety_pass_rate']*100:.1f}% pass rate")
+        safety_data = summary_df.groupby('model')['safety_pass_rate'].mean()
+        for model, rate in safety_data.items():
+            report_lines.append(f"- {model}: {rate*100:.1f}% pass rate")
         report_lines.append("")
         
         # Best suggestion position analysis
         report_lines.append("### Best Suggestion Position Distribution")
-        for _, row in summary_df.iterrows():
-            report_lines.append(f"- {row['model']}:")
+        for model in summary_df['model'].unique():
+            model_data = summary_df[summary_df['model'] == model]
+            report_lines.append(f"- {model}:")
             for i in range(1, 4):
-                report_lines.append(f"  - Position {i}: {row[f'best_suggestion_{i}_rate']*100:.1f}%")
+                avg_rate = model_data[f'best_suggestion_{i}_rate'].mean()
+                report_lines.append(f"  - Position {i}: {avg_rate*100:.1f}%")
         report_lines.append("")
         
         # Write report
@@ -846,75 +1235,81 @@ class TestDataGenerator:
         
         scenarios = [
             {
-                "type": "customer_support",
-                "sentiment": "frustrated",
-                "chat_history": [
-                    {"role": "user", "content": "I've been trying to reset my password for 30 minutes!"},
-                    {"role": "assistant", "content": "I apologize for the frustration. Let me help you with that right away."},
-                    {"role": "user", "content": "I've tried the reset link 5 times and it's not working"}
+                "type": "customer_support_frustrated",
+                "messages": [
+                    ChatMessage("1", "I've been trying to reset my password for 30 minutes!", "Alex", "2024-01-15 10:00:00"),
+                    ChatMessage("2", "I apologize for the frustration. Let me help you with that right away.", "Support", "2024-01-15 10:01:00"),
+                    ChatMessage("3", "I've tried the reset link 5 times and it's not working", "Alex", "2024-01-15 10:02:00")
                 ],
-                "current_message": "This is ridiculous. I need to access my account NOW.",
-                "emotional_indicators": ["anger", "urgency"]
+                "current_user": "Support",
+                "sentiment": SentimentProbabilities(sadness=0.1, joy=0.0, love=0.0, anger=0.7, fear=0.1, unknown=0.1)
             },
             {
-                "type": "sales_inquiry",
-                "sentiment": "interested",
-                "chat_history": [
-                    {"role": "user", "content": "Hi, I'm looking for a project management tool for my team"},
-                    {"role": "assistant", "content": "Great! I'd be happy to help you find the perfect solution. How large is your team?"},
-                    {"role": "user", "content": "We're about 25 people, mostly remote"}
+                "type": "sales_inquiry_interested",
+                "messages": [
+                    ChatMessage("1", "Hi, I'm looking for a project management tool for my team", "Sarah", "2024-01-15 11:00:00"),
+                    ChatMessage("2", "Great! I'd be happy to help you find the perfect solution. How large is your team?", "Sales", "2024-01-15 11:01:00"),
+                    ChatMessage("3", "We're about 25 people, mostly remote", "Sarah", "2024-01-15 11:02:00")
                 ],
-                "current_message": "What features do you have for remote collaboration?",
-                "emotional_indicators": ["curiosity", "business-focused"]
+                "current_user": "Sales",
+                "sentiment": SentimentProbabilities(sadness=0.0, joy=0.3, love=0.0, anger=0.0, fear=0.0, unknown=0.7)
             },
             {
-                "type": "technical_support",
-                "sentiment": "confused",
-                "chat_history": [
-                    {"role": "user", "content": "My app keeps crashing when I try to upload files"},
-                    {"role": "assistant", "content": "I'm sorry to hear that. What type of files are you trying to upload?"},
-                    {"role": "user", "content": "Just regular PDFs, nothing special"}
+                "type": "technical_support_confused",
+                "messages": [
+                    ChatMessage("1", "My app keeps crashing when I try to upload files", "Mike", "2024-01-15 12:00:00"),
+                    ChatMessage("2", "I'm sorry to hear that. What type of files are you trying to upload?", "Tech", "2024-01-15 12:01:00"),
+                    ChatMessage("3", "Just regular PDFs, nothing special", "Mike", "2024-01-15 12:02:00")
                 ],
-                "current_message": "I don't understand why this is happening. It worked fine yesterday.",
-                "emotional_indicators": ["confusion", "mild frustration"]
+                "current_user": "Tech",
+                "sentiment": SentimentProbabilities(sadness=0.2, joy=0.0, love=0.0, anger=0.1, fear=0.3, unknown=0.4)
             },
             {
-                "type": "positive_feedback",
-                "sentiment": "happy",
-                "chat_history": [
-                    {"role": "user", "content": "Just wanted to say your service has been amazing!"},
-                    {"role": "assistant", "content": "Thank you so much! That really makes our day. What specifically has been helpful?"},
-                    {"role": "user", "content": "The customer support team solved my issue in minutes"}
+                "type": "positive_feedback_happy",
+                "messages": [
+                    ChatMessage("1", "Just wanted to say your service has been amazing!", "Emma", "2024-01-15 13:00:00"),
+                    ChatMessage("2", "Thank you so much! That really makes our day. What specifically has been helpful?", "Support", "2024-01-15 13:01:00"),
+                    ChatMessage("3", "The customer support team solved my issue in minutes", "Emma", "2024-01-15 13:02:00")
                 ],
-                "current_message": "I'll definitely be recommending you to my colleagues!",
-                "emotional_indicators": ["satisfaction", "enthusiasm"]
+                "current_user": "Support",
+                "sentiment": SentimentProbabilities(sadness=0.0, joy=0.8, love=0.1, anger=0.0, fear=0.0, unknown=0.1)
             },
             {
-                "type": "product_inquiry",
-                "sentiment": "neutral",
-                "chat_history": [
-                    {"role": "user", "content": "Do you offer educational discounts?"},
-                    {"role": "assistant", "content": "Yes, we do offer special pricing for educational institutions."},
-                    {"role": "user", "content": "What documentation do I need to provide?"}
+                "type": "relationship_conflict",
+                "messages": [
+                    ChatMessage("1", "You never listen to what I'm saying", "Jordan", "2024-01-15 14:00:00"),
+                    ChatMessage("2", "That's not fair, I do listen but you keep interrupting me", "Casey", "2024-01-15 14:01:00"),
+                    ChatMessage("3", "See, you're doing it again, making it about you", "Jordan", "2024-01-15 14:02:00")
                 ],
-                "current_message": "And how long does the verification process usually take?",
-                "emotional_indicators": ["professional", "information-seeking"]
+                "current_user": "Casey",
+                "sentiment": SentimentProbabilities(sadness=0.3, joy=0.0, love=0.0, anger=0.5, fear=0.1, unknown=0.1)
             }
         ]
         
         test_contexts = []
         
-        # Generate contexts by cycling through scenarios
+        # Generate contexts by cycling through scenarios with variations
         for i in range(num_contexts):
             scenario = scenarios[i % len(scenarios)]
             
-            # Add some variation to the base scenarios
+            # Add some variation to sentiment probabilities
+            sentiment = scenario["sentiment"]
+            if i % 3 == 0:  # Add some noise to 1/3 of contexts
+                import random
+                noise = 0.1
+                sentiment = SentimentProbabilities(
+                    sadness=max(0, min(1, sentiment.sadness + random.uniform(-noise, noise))),
+                    joy=max(0, min(1, sentiment.joy + random.uniform(-noise, noise))),
+                    love=max(0, min(1, sentiment.love + random.uniform(-noise, noise))),
+                    anger=max(0, min(1, sentiment.anger + random.uniform(-noise, noise))),
+                    fear=max(0, min(1, sentiment.fear + random.uniform(-noise, noise))),
+                    unknown=max(0, min(1, sentiment.unknown + random.uniform(-noise, noise)))
+                )
+            
             context = ChatContext(
-                chat_history=scenario["chat_history"].copy(),
-                current_message=scenario["current_message"],
-                sentiment=scenario["sentiment"],
-                emotional_indicators=scenario["emotional_indicators"],
-                rag_context=f"Customer type: {scenario['type']}, Account tier: Premium" if i % 3 == 0 else None
+                chat_history=scenario["messages"].copy(),
+                current_user=scenario["current_user"],
+                sentiment_probabilities=sentiment
             )
             
             test_contexts.append(context)
@@ -926,37 +1321,63 @@ class TestDataGenerator:
 async def main():
     """Main execution function"""
     
+    # Load environment variables
+    load_dotenv()
+    
     # Configuration
     config = {
-        "openai_api_key": "your-openai-api-key",
-        "anthropic_api_key": "your-anthropic-api-key",
         "num_test_contexts": 10,  # Reduced for demo
         "models_to_test": {
             "gpt-4": "gpt-4-turbo-preview",
             "gpt-3.5": "gpt-3.5-turbo",
             "claude-3-opus": "claude-3-opus-20240229",
-            "claude-3-sonnet": "claude-3-sonnet-20240229"
+            "claude-3-sonnet": "claude-3-sonnet-20240229",
+            "gemini-pro": "gemini-1.5-pro"
         },
-        "judge_model": "gpt-4-turbo-preview"  # Use best model as judge
+        "judge_model": "gpt-4-turbo-preview",  # Use best model as judge
+        "prompt_variants": ["base", "no_positivity", "no_sentiment"]
     }
     
     # Initialize providers
     providers = {}
     
-    if config["openai_api_key"] != "your-openai-api-key":
-        providers["gpt-4"] = OpenAIProvider(config["openai_api_key"], config["models_to_test"]["gpt-4"])
-        providers["gpt-3.5"] = OpenAIProvider(config["openai_api_key"], config["models_to_test"]["gpt-3.5"])
+    # OpenAI
+    if os.getenv("OPENAI_API_KEY"):
+        try:
+            providers["gpt-4"] = OpenAIProvider(config["models_to_test"]["gpt-4"])
+            providers["gpt-3.5"] = OpenAIProvider(config["models_to_test"]["gpt-3.5"])
+        except Exception as e:
+            logger.warning(f"Failed to initialize OpenAI providers: {e}")
     
-    if config["anthropic_api_key"] != "your-anthropic-api-key":
-        providers["claude-3-opus"] = AnthropicProvider(config["anthropic_api_key"], config["models_to_test"]["claude-3-opus"])
-        providers["claude-3-sonnet"] = AnthropicProvider(config["anthropic_api_key"], config["models_to_test"]["claude-3-sonnet"])
+    # Anthropic
+    if os.getenv("ANTHROPIC_API_KEY"):
+        try:
+            providers["claude-3-opus"] = AnthropicProvider(config["models_to_test"]["claude-3-opus"])
+            providers["claude-3-sonnet"] = AnthropicProvider(config["models_to_test"]["claude-3-sonnet"])
+        except Exception as e:
+            logger.warning(f"Failed to initialize Anthropic providers: {e}")
+    
+    # Gemini
+    if os.getenv("GOOGLE_API_KEY"):
+        try:
+            providers["gemini-pro"] = GeminiProvider(config["models_to_test"]["gemini-pro"])
+        except Exception as e:
+            logger.warning(f"Failed to initialize Gemini provider: {e}")
     
     if not providers:
-        logger.error("No valid API keys provided. Please update the configuration.")
+        logger.error("No valid API keys provided. Please update your .env file.")
         return
     
     # Initialize judge
-    judge_provider = OpenAIProvider(config["openai_api_key"], config["judge_model"])
+    judge_provider = None
+    if os.getenv("OPENAI_API_KEY"):
+        judge_provider = OpenAIProvider(config["judge_model"])
+    elif os.getenv("GOOGLE_API_KEY"):
+        judge_provider = GeminiProvider("gemini-1.5-pro")
+        logger.info("Using Gemini as judge since OpenAI key not available")
+    else:
+        logger.error("No judge model available. Need either OpenAI or Google API key.")
+        return
     
     # Generate test data
     logger.info("Generating test contexts...")
@@ -966,9 +1387,10 @@ async def main():
     logger.info("Starting evaluation pipeline...")
     pipeline = EvaluationPipeline(judge_provider)
     
-    results_df = await pipeline.evaluate_models(
+    results_df = await pipeline.evaluate_models_with_prompts(
         test_contexts=test_contexts,
         model_providers=providers,
+        prompt_variants=config["prompt_variants"],
         save_intermediate=True
     )
     
@@ -986,74 +1408,73 @@ async def main():
     
     summary_df = report_generator._generate_summary_statistics()
     
-    print("\nOverall Quality Scores:")
-    for _, row in summary_df.sort_values('avg_overall_quality', ascending=False).iterrows():
-        print(f"{row['model']}: {row['avg_overall_quality']:.2f}")
+    print("\nOverall Quality Scores (averaged across prompt variants):")
+    model_avg_quality = summary_df.groupby('model')['avg_overall_quality'].mean().sort_values(ascending=False)
+    for model, score in model_avg_quality.items():
+        print(f"{model}: {score:.2f}")
+    
+    print("\nPositivity Impact Scores:")
+    model_avg_positivity = summary_df.groupby('model')['avg_positivity_score'].mean().sort_values(ascending=False)
+    for model, score in model_avg_positivity.items():
+        print(f"{model}: {score:.2f}")
     
     print("\nGeneration Speed (seconds):")
-    for _, row in summary_df.sort_values('avg_generation_time').iterrows():
-        print(f"{row['model']}: {row['avg_generation_time']:.2f}s")
+    model_avg_speed = summary_df.groupby('model')['avg_generation_time'].mean().sort_values()
+    for model, speed in model_avg_speed.items():
+        print(f"{model}: {speed:.2f}s")
     
     print(f"\nDetailed reports available in: {report_dir}")
 
 # ============== Utility Functions ==============
 
-def setup_api_keys():
-    """Helper function to set up API keys from environment variables"""
-    import os
-    
-    config = {
-        "openai_api_key": os.getenv("OPENAI_API_KEY", "your-openai-api-key"),
-        "anthropic_api_key": os.getenv("ANTHROPIC_API_KEY", "your-anthropic-api-key")
-    }
-    
-    return config
-
 def run_evaluation(
-    test_contexts: Optional[List[ChatContext]] = None,
+    test_contexts: List[ChatContext] = None,
     num_contexts: int = 10,
-    models_to_test: Optional[Dict[str, str]] = None,
-    judge_model: str = "gpt-4-turbo-preview"
+    models_to_test: Dict[str, str] = None,
+    judge_model: str = "gpt-4-turbo-preview",
+    prompt_variants: List[str] = None
 ):
     """Convenience function to run evaluation"""
     
-    # Get API keys
-    api_config = setup_api_keys()
+    # Load environment variables
+    load_dotenv()
     
     # Default models if not specified
     if models_to_test is None:
         models_to_test = {
             "gpt-4": "gpt-4-turbo-preview",
-            "gpt-3.5": "gpt-3.5-turbo"
+            "gpt-3.5": "gpt-3.5-turbo",
+            "gemini-pro": "gemini-1.5-pro"
         }
+    
+    # Default prompt variants
+    if prompt_variants is None:
+        prompt_variants = ["base", "no_positivity", "no_sentiment"]
     
     # Generate test contexts if not provided
     if test_contexts is None:
         test_contexts = TestDataGenerator.generate_test_contexts(num_contexts)
     
-    # Update config
-    config = {
-        **api_config,
-        "num_test_contexts": len(test_contexts),
-        "models_to_test": models_to_test,
-        "judge_model": judge_model
-    }
-    
-    # Run async main with config
+    # Run async main
     import asyncio
     asyncio.run(main())
 
 if __name__ == "__main__":
     # Example usage
-    print("LLM Judge Evaluation System")
+    print("LLM Judge Evaluation System - Modified Version")
     print("-" * 50)
     print("This system evaluates LLM performance for chat response suggestions.")
+    print("\nFeatures:")
+    print("- Sentiment probabilities for 6 emotions")
+    print("- Positivity impact scoring")
+    print("- Multiple prompt variants")
+    print("- Support for OpenAI, Anthropic, and Google Gemini models")
     print("\nTo run the evaluation:")
-    print("1. Set your API keys as environment variables:")
-    print("   export OPENAI_API_KEY='your-key'")
-    print("   export ANTHROPIC_API_KEY='your-key'")
+    print("1. Create a .env file with your API keys:")
+    print("   OPENAI_API_KEY=your-key")
+    print("   ANTHROPIC_API_KEY=your-key")
+    print("   GOOGLE_API_KEY=your-key")
     print("2. Run: python llm_judge_system.py")
-    print("\nOr use the run_evaluation() function programmatically.")
     
     # Uncomment to run evaluation
     # asyncio.run(main())
