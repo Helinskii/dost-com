@@ -1,4 +1,6 @@
 import time
+import logging
+logging.basicConfig(filename='llm_eval.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 from typing import List
 from models import ChatContext, ResponseSuggestions
 from prompts import PromptVariants
@@ -32,7 +34,6 @@ class SuggestionGenerator:
                 prompt_variant=prompt_variant
             )
         except Exception as e:
-            import logging
             logging.error(f"Error generating suggestions: {e}")
             raise
 

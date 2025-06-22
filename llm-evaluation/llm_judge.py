@@ -1,6 +1,7 @@
 import time
 import json
 import logging
+logging.basicConfig(filename='llm_eval.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 from models import ChatContext, ResponseSuggestions, EvaluationResult, EvaluationMetrics
 
 class LLMJudge:

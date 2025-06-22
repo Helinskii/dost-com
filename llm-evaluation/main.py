@@ -1,5 +1,7 @@
 import os
 import asyncio
+import logging
+logging.basicConfig(filename='llm_eval.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 from dotenv import load_dotenv
 from test_data import TestDataGenerator
 from providers import OpenAIProvider, AnthropicProvider, GeminiProvider
@@ -8,7 +10,6 @@ from report import ReportGenerator
 
 async def generate_and_store_suggestions_main():
     load_dotenv()
-    import logging
     from datetime import datetime
     config = {
         "num_test_contexts": 1,
@@ -51,7 +52,6 @@ async def generate_and_store_suggestions_main():
 
 async def evaluate_stored_suggestions_main():
     load_dotenv()
-    import logging
     from datetime import datetime
     config = {
         "judge_model": "gpt-4o-mini-2024-07-18"

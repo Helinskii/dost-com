@@ -1,4 +1,5 @@
 import logging
+logging.basicConfig(filename='llm_eval.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 import pandas as pd
 from datetime import datetime
 from typing import List, Dict, Any

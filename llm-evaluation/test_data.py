@@ -1,4 +1,6 @@
 import random
+import logging
+logging.basicConfig(filename='llm_eval.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 from typing import List
 from models import ChatMessage, SentimentProbabilities, ChatContext
 

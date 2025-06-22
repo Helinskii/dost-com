@@ -2,6 +2,7 @@ import pandas as pd
 from pathlib import Path
 from datetime import datetime
 import logging
+logging.basicConfig(filename='llm_eval.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 # Visualization imports (plotly, matplotlib, seaborn, etc.)
 import plotly.graph_objects as go
 import plotly.express as px
