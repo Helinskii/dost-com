@@ -22,6 +22,7 @@ Potential Dataset - [Kaggle Data Set](https://www.kaggle.com/datasets/parulpande
 - *Sentiment Analytics*: Deepshikhar
 - *NLP*: Shubham
 - *LLM API*: Rishabh, Sanket
+- *LLM Evaluation*: Ishwer
 - *Database*: Yuvasree
 - *Project Report*: Sanket + **ALL**
 
