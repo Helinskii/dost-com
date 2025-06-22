@@ -10,9 +10,9 @@ llm_context_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../l
 if llm_context_path not in sys.path:
     sys.path.insert(0, llm_context_path)
 try:
-    from llm_handler import get_openai_rag_response # type: ignore
+    from llm_handler import get_llm_rag_response # type: ignore
 except ImportError as e:
-    raise ImportError(f"Could not import 'get_openai_rag_response' from 'llm_handler.py'. Make sure 'llm_handler.py' exists in '{llm_context_path}'. Original error: {e}")
+    raise ImportError(f"Could not import 'get_llm_rag_response' from 'llm_handler.py'. Make sure 'llm_handler.py' exists in '{llm_context_path}'. Original error: {e}")
 
 
 # 1. Load embedding model (used for query embedding)
@@ -111,7 +111,7 @@ def call_rag(input_data, vectorstore):
         # print(f"Message: {message}\nContext: {context_lines}")
         # print(f"Message Type: {type(message)}\nContext Type: {type(context_lines)}")
 
-        llmresponse = get_openai_rag_response(message, context_lines)
+        llmresponse = get_llm_rag_response(message, context_lines)
 
         return {
             "Response": llmresponse

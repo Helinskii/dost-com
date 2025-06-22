@@ -8,33 +8,27 @@ import requests
 load_dotenv()
 
 ## Builds the prompt for the LLM using the recent message and context history
-def build_rag_prompt(recent_entry, context_history):
+def build_rag_prompt(recent_entry, context_history=None):
 
-    username = recent_entry['Sender']
-    message = recent_entry['Message']
-    
-    # Convert probabilities to percentages and sort
+    username = recent_entry.get('Sender', {})
+    message = recent_entry.get('Message', {})
     emotion_detected = recent_entry.get("Sentiment", {})
     # sorted_sentiments = sorted(sentiment_scores.items(), key=lambda x: x[1], reverse=True)
     # sentiment_text = ", ".join([f"{k}: {round(v * 100)}%" for k, v in sorted_sentiments]) or "No dominant emotion detected"
 
     # Filter context to include the user's own messages
-    if context_history:
-        own_context = "\n".join(
-            f"{entry['sender']}: {entry['message']} (emotion: {entry['sentiment']})"
-            for entry in context_history if entry['sender'] == username
-        )
-    else:
-        own_context = []    
+    own_messages = [
+        f"{entry['sender']}: {entry['message']} (emotion: {entry['sentiment']})"
+        for entry in context_history if entry.get('sender') == username
+    ]
+    own_context = f"### {username}'s Previous Messages:\n" + "\n".join(own_messages) if own_messages else ""
 
     # Filter context to exclude the user's own messages
-    if context_history:
-        others_context = "\n".join(
-            f"{entry['sender']}: {entry['message']} (emotion: {entry['sentiment']})"
-            for entry in context_history if entry['sender'] != username
-        )
-    else:
-        others_context = []
+    others_messages = [
+        f"{entry['sender']}: {entry['message']} (emotion: {entry['sentiment']})"
+        for entry in context_history if entry.get('sender') != username
+    ]
+    others_context = f"### Messages from Other Users:\n" + "\n".join(others_messages) if others_messages else ""
 
     prompt = f"""
 
@@ -45,17 +39,15 @@ Your task is to Understand the emotional tone and context, and Generate kind and
 
 Take into account:
 - The emotion of the recent message
-- The user's own past messages to understand what they're going through
-- Other users' past responses to maintain coherence and empathy
+- The user's own past messages if there are any to understand what they're going through
+- Other users' past responses if there are any to maintain coherence and empathy
 
 ### Recent Message from {username}:
 {message}  
 Emotion: {emotion_detected}
 
-### {username}'s Previous Messages:
 {own_context}
 
-### Messages from Other Users:
 {others_context}
 
 ### Task:
@@ -69,8 +61,8 @@ Guidelines:
 """
     return prompt.strip()
 
-############Uncomment this for OpenAI LLMs###########
-def get_openai_rag_response(recent_entry, context_history):
+############Uncomment this for OpenAI LLM and Comment other###########
+def get_llm_rag_response(recent_entry, context_history):
 
     ############Uncomment this for OpenAI LLMs############
     openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -99,60 +91,64 @@ def get_openai_rag_response(recent_entry, context_history):
     return suggestions[:3]  # Return only the first 3 suggestions
 
 
-##########Uncomment this for Ollama LLMs#############
-# def get_tinyllama_rag_response(recent_entry, context_history):
 
-#     OLLAMA_URL = "http://localhost:11434/api/generate"
-#     MODEL_NAME = "tinyllama"
+    # #########Uncomment this for HuggingFace LLM and Comment other##########
+    # MODEL_NAME = "distilgpt2"
+    # tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+    # model = AutoModelForCausalLM.from_pretrained(MODEL_NAME).to("cpu")
+    # model.eval()
+    # prompt = build_rag_prompt(recent_entry, context_history)
+    # inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=1024)
+    # with torch.no_grad():
+    #     output = model.generate(
+    #     **inputs,
+    #     max_new_tokens=100,
+    #     do_sample=True,
+    #     temperature=0.7,
+    #     top_k=50,
+    #     top_p=0.95,
+    #     pad_token_id=tokenizer.eos_token_id
+    # )
 
-#     prompt = build_rag_prompt(recent_entry, context_history)
+    # decoded = tokenizer.decode(output[0], skip_special_tokens=True)
 
-#     response = requests.post(OLLAMA_URL, json={
-#         "model": MODEL_NAME,
-#         "prompt": prompt,
-#         "stream": False
-#     })
+    # # Remove prompt from beginning of decoded output
+    # generated = decoded[len(prompt):].strip()
 
-#     if response.status_code == 200:
-#         raw_text = response.json()['response'].strip()
+    # # Split suggestions by line or double newline
+    # suggestions = [line.strip() for line in generated.split('\n') if line.strip()]
 
-#         Split and clean suggestions
-#         suggestions = [
-#           line.strip().replace('\n', ' ')
-#           for line in raw_text.split('\n\n')
-#           if line.strip()
-#         ]
-#         return suggestions[:3]  # Return only the first 3 suggestions
-#     else:
-#         return f"Error: {response.status_code} - {response.text}"
+    # return suggestions
 
 
-##########Uncomment this for HuggingFace LLMs##########
-# def get_hf_rag_response(recent_entry, context_history, max_tokens=100):
 
-#     MODEL_NAME = "distilgpt2"
-#     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-#     model = AutoModelForCausalLM.from_pretrained(MODEL_NAME).to("cpu")
-#     model.eval()
-#     prompt = build_rag_prompt(recent_entry, context_history)
-#     inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=1024)
-#     with torch.no_grad():
-#         output = model.generate(
-#         **inputs,
-#         max_new_tokens=max_tokens,
-#         do_sample=True,
-#         temperature=0.7,
-#         top_k=50,
-#         top_p=0.95,
-#         pad_token_id=tokenizer.eos_token_id
-#     )
 
-#     decoded = tokenizer.decode(output[0], skip_special_tokens=True)
+    # #########Uncomment this for Ollama LLM and Comment other#############
+    # OLLAMA_URL = "http://localhost:11434/api/generate"
+    # MODEL_NAME = "tinyllama"
 
-#     # Remove prompt from beginning of decoded output
-#     generated = decoded[len(prompt):].strip()
+    # prompt = build_rag_prompt(recent_entry, context_history)
 
-#     # Split suggestions by line or double newline
-#     suggestions = [line.strip() for line in generated.split('\n') if line.strip()]
+    # response = requests.post(OLLAMA_URL, json={
+    #     "model": MODEL_NAME,
+    #     "prompt": prompt,
+    #     "stream": False
+    # })
 
-#     return suggestions
+    # if response.status_code == 200:
+    #     raw_text = response.json()['response'].strip()
+
+    #     Split and clean suggestions
+    #     suggestions = [
+    #       line.strip().replace('\n', ' ')
+    #       for line in raw_text.split('\n\n')
+    #       if line.strip()
+    #     ]
+    #     return suggestions[:3]  # Return only the first 3 suggestions
+    # else:
+    #     return f"Error: {response.status_code} - {response.text}"
+
+
+
+
+
