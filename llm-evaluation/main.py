@@ -97,7 +97,7 @@ async def evaluate_stored_suggestions_main():
         print(f"{model}: {speed:.2f}s")
     print(f"\nDetailed reports available in: {report_dir}")
 
-async def resume_report_from_intermediate(intermediate_path="intermediate_results_20250622_193404.csv"):
+async def resume_report_from_intermediate(intermediate_path="intermediate_results_gpt.csv"):
     import pandas as pd
     if not os.path.exists(intermediate_path):
         print(f"Intermediate results file not found: {intermediate_path}")
