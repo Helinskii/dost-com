@@ -54,7 +54,7 @@ async def evaluate_stored_suggestions_main():
     load_dotenv()
     from datetime import datetime
     config = {
-        "judge_model": "gpt-4o-mini-2024-07-18"
+        "judge_model": "gpt-4.1-mini"
     }
     # Judge provider selection
     judge_model_name = config["judge_model"]
@@ -68,7 +68,17 @@ async def evaluate_stored_suggestions_main():
         return
     pipeline = EvaluationPipeline(judge_provider)
     records = pipeline.load_suggestions("suggestions.jsonl")
-    results_df = await pipeline.evaluate_stored_suggestions(records)
+    # Filter records: if judge is GPT, only evaluate Gemini; if judge is Gemini, only evaluate GPT
+    if judge_model_name.startswith("gpt-"):
+        filtered_records = [r for r in records if str(r.get('model_name', '')).startswith('gemini')]
+    elif judge_model_name.startswith("gemini-"):
+        filtered_records = [r for r in records if str(r.get('model_name', '')).startswith('gpt')]
+    else:
+        filtered_records = records
+    if not filtered_records:
+        print("No records to evaluate for the selected judge/model combination.")
+        return
+    results_df = await pipeline.evaluate_stored_suggestions(filtered_records)
     report_generator = ReportGenerator(results_df)
     report_dir = report_generator.generate_full_report()
     print(f"Evaluation complete! Reports saved to: {report_dir}")
@@ -97,4 +107,4 @@ if __name__ == "__main__":
     print("- Multiple prompt variants")
     print("- Support for OpenAI, Anthropic, and Google Gemini models")
     # By default, call the generate function
-    asyncio.run(generate_and_store_suggestions_main())
+    asyncio.run(evaluate_stored_suggestions_main())
