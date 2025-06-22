@@ -62,9 +62,10 @@ class EvaluationPipeline:
     async def evaluate_stored_suggestions(
         self,
         suggestions_records: List[Dict[str, Any]],
-        save_intermediate: bool = True
+        save_intermediate: bool = True,
+        output_file: str = "judge_results.jsonl"
     ) -> pd.DataFrame:
-        """Evaluate suggestions loaded from file and return DataFrame."""
+        """Evaluate suggestions loaded from file and return DataFrame. Writes each result to file as soon as it is available."""
         all_results = []
         total_evaluations = len(suggestions_records)
         completed = 0
@@ -83,6 +84,9 @@ class EvaluationPipeline:
                 record['context_id'], context, suggestions, evaluation, record['prompt_variant']
             )
             all_results.append(result_record)
+            # Write each result to file as soon as it is available
+            with open(output_file, 'a') as f:
+                f.write(json.dumps(result_record) + '\n')
             completed += 1
             logging.info(f"  Progress: {completed}/{total_evaluations} ({completed/total_evaluations*100:.1f}%)")
             if save_intermediate and completed % 10 == 0:
