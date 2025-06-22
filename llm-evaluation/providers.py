@@ -3,6 +3,9 @@ import asyncio
 from abc import ABC, abstractmethod
 from typing import Any
 import aiohttp
+import time
+import logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Optional: import genai if available for Gemini
 try:
@@ -75,15 +78,17 @@ class AnthropicProvider(LLMProvider):
         return self.model
 
 class GeminiProvider(LLMProvider):
-    def __init__(self, model: str = "gemini-1.5-pro"):
-        self.api_key = os.getenv("GEMINI_API_KEY")
+    def __init__(self, model: str = "gemini-2.5-flash"):
+        self.api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
         if not self.api_key:
-            raise ValueError("GEMINI_API_KEY not set in environment.")
+            raise ValueError("GEMINI_API_KEY or GOOGLE_API_KEY not set in environment.")
         if genai is None:
             raise ImportError("google-generativeai is not installed.")
         genai.configure(api_key=self.api_key)
         self.model = genai.GenerativeModel(model)
         self.model_name = model
+        # Delay in seconds between requests (to avoid rate limits)
+        self.request_delay = float(os.getenv("GEMINI_REQUEST_DELAY", "4.1"))  
 
     async def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 500) -> str:
         generation_config = {
@@ -92,8 +97,29 @@ class GeminiProvider(LLMProvider):
         }
         loop = asyncio.get_event_loop()
         def _generate():
+            if self.request_delay > 0:
+                time.sleep(self.request_delay)
             response = self.model.generate_content(prompt, generation_config=generation_config)
-            return response.text if hasattr(response, 'text') else str(response)
+            # Try to extract text from response
+            if hasattr(response, 'text') and response.text:
+                return response.text
+            # Try to extract from candidates' parts if available
+            if hasattr(response, 'candidates') and response.candidates:
+                for candidate in response.candidates:
+                    if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts'):
+                        for part in candidate.content.parts:
+                            if isinstance(part, str) and part.strip():
+                                return part
+                            if hasattr(part, 'text') and part.text.strip():
+                                return part.text
+                    # Fallback: try candidate.text
+                    if hasattr(candidate, 'text') and candidate.text:
+                        return candidate.text
+                finish_reason = getattr(response.candidates[0], 'finish_reason', None)
+            else:
+                finish_reason = None
+            logging.error(f"No valid response from Gemini. finish_reason={finish_reason}, response={response}")
+            return "No valid response from Gemini."
         return await loop.run_in_executor(None, _generate)
 
     def get_name(self) -> str:

@@ -16,8 +16,8 @@ async def generate_and_store_suggestions_main():
         "models_to_test": {
             "gpt-4.1-mini": "gpt-4.1-mini-2025-04-14",
             "gpt-4o-mini": "gpt-4o-mini-2024-07-18",
-            "gemini-flash": "gemini-2.0-flash",
-            "gemini-pro": "gemini-1.5-pro"
+            "gemini-2.5-flash": "gemini-2.5-flash-lite-preview-06-17",
+            "gemini-2.0-flash": "gemini-2.0-flash"
         },
         "prompt_variants": ["base", "no_positivity", "no_sentiment"]
     }
@@ -30,7 +30,7 @@ async def generate_and_store_suggestions_main():
                 except Exception as e:
                     logging.warning(f"Failed to initialize OpenAI provider {key}: {e}")
     if os.getenv("GEMINI_API_KEY"):
-        for key in ["gemini-flash", "gemini-pro"]:
+        for key in ["gemini-2.5-flash", "gemini-2.0-flash"]:
             if key in config["models_to_test"]:
                 try:
                     providers[key] = GeminiProvider(config["models_to_test"][key])

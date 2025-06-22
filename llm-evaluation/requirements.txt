@@ -7,3 +7,4 @@ aiohttp>=3.8.0
 scipy>=1.10.0
 python-dotenv>=1.0.0
 kaleido>=0.2.1  # For plotly image export
+google-generativeai>=0.8.5
