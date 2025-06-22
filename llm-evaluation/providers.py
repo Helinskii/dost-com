@@ -76,9 +76,9 @@ class AnthropicProvider(LLMProvider):
 
 class GeminiProvider(LLMProvider):
     def __init__(self, model: str = "gemini-1.5-pro"):
-        self.api_key = os.getenv("GOOGLE_API_KEY")
+        self.api_key = os.getenv("GEMINI_API_KEY")
         if not self.api_key:
-            raise ValueError("GOOGLE_API_KEY not set in environment.")
+            raise ValueError("GEMINI_API_KEY not set in environment.")
         if genai is None:
             raise ImportError("google-generativeai is not installed.")
         genai.configure(api_key=self.api_key)

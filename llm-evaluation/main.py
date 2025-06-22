@@ -29,7 +29,7 @@ async def generate_and_store_suggestions_main():
                     providers[key] = OpenAIProvider(config["models_to_test"][key])
                 except Exception as e:
                     logging.warning(f"Failed to initialize OpenAI provider {key}: {e}")
-    if os.getenv("GOOGLE_API_KEY"):
+    if os.getenv("GEMINI_API_KEY"):
         for key in ["gemini-flash", "gemini-pro"]:
             if key in config["models_to_test"]:
                 try:
@@ -61,7 +61,7 @@ async def evaluate_stored_suggestions_main():
     judge_provider = None
     if judge_model_name.startswith("gpt-") and os.getenv("OPENAI_API_KEY"):
         judge_provider = OpenAIProvider(judge_model_name)
-    elif judge_model_name.startswith("gemini-") and os.getenv("GOOGLE_API_KEY"):
+    elif judge_model_name.startswith("gemini-") and os.getenv("GEMINI_API_KEY"):
         judge_provider = GeminiProvider(judge_model_name)
     if judge_provider is None:
         logging.error("No judge model available. Please check your config and API keys.")
