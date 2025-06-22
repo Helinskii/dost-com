@@ -2,6 +2,7 @@ import logging
 import pandas as pd
 from datetime import datetime
 from typing import List, Dict, Any
+import json
 from .llm_judge import LLMJudge
 from .models import ChatContext, ResponseSuggestions, EvaluationResult
 
@@ -10,6 +11,95 @@ class EvaluationPipeline:
     def __init__(self, judge_provider):
         self.judge = LLMJudge(judge_provider)
         self.results_cache = []
+
+    async def generate_and_store_suggestions(
+        self,
+        test_contexts: List[ChatContext],
+        model_providers: Dict[str, Any],
+        prompt_variants: List[str] = ['base', 'no_positivity', 'no_sentiment'],
+        output_file: str = "suggestions.jsonl"
+    ):
+        """Generate suggestions and store them in a JSONL file for later evaluation."""
+        from .suggestion_generator import SuggestionGenerator
+        with open(output_file, 'w') as f:
+            for context_idx, context in enumerate(test_contexts):
+                logging.info(f"Generating suggestions for context {context_idx + 1}/{len(test_contexts)}")
+                for model_name, provider in model_providers.items():
+                    sugg_gen = SuggestionGenerator(provider)
+                    for prompt_variant in prompt_variants:
+                        suggestions = await sugg_gen.generate_suggestions(context, prompt_variant)
+                        # Store all info needed for later evaluation
+                        record = {
+                            'context_id': context_idx,
+                            'model_name': model_name,
+                            'prompt_variant': prompt_variant,
+                            'suggestions': {
+                                'suggestion_1': suggestions.suggestion_1,
+                                'suggestion_2': suggestions.suggestion_2,
+                                'suggestion_3': suggestions.suggestion_3,
+                            },
+                            'generation_time': suggestions.generation_time,
+                            'chat_context': context,
+                            'timestamp': datetime.now().isoformat()
+                        }
+                        # Custom encoder for dataclasses
+                        def default(obj):
+                            if hasattr(obj, '__dict__'):
+                                return obj.__dict__
+                            return str(obj)
+                        f.write(json.dumps(record, default=default) + '\n')
+        logging.info(f"Suggestions written to {output_file}")
+
+    def load_suggestions(self, suggestions_file: str) -> List[Dict[str, Any]]:
+        """Load suggestions from a JSONL file."""
+        records = []
+        with open(suggestions_file, 'r') as f:
+            for line in f:
+                records.append(json.loads(line))
+        return records
+
+    async def evaluate_stored_suggestions(
+        self,
+        suggestions_records: List[Dict[str, Any]],
+        save_intermediate: bool = True
+    ) -> pd.DataFrame:
+        """Evaluate suggestions loaded from file and return DataFrame."""
+        all_results = []
+        total_evaluations = len(suggestions_records)
+        completed = 0
+        for record in suggestions_records:
+            context = self._reconstruct_context(record['chat_context'])
+            suggestions = ResponseSuggestions(
+                suggestion_1=record['suggestions']['suggestion_1'],
+                suggestion_2=record['suggestions']['suggestion_2'],
+                suggestion_3=record['suggestions']['suggestion_3'],
+                model_name=record['model_name'],
+                generation_time=record['generation_time'],
+                prompt_variant=record['prompt_variant']
+            )
+            evaluation = await self.judge.evaluate(context, suggestions)
+            result_record = self._create_result_record(
+                record['context_id'], context, suggestions, evaluation, record['prompt_variant']
+            )
+            all_results.append(result_record)
+            completed += 1
+            logging.info(f"  Progress: {completed}/{total_evaluations} ({completed/total_evaluations*100:.1f}%)")
+            if save_intermediate and completed % 10 == 0:
+                self._save_intermediate_results(all_results)
+        results_df = pd.DataFrame(all_results)
+        self.results_cache = all_results
+        return results_df
+
+    def _reconstruct_context(self, context_dict: dict) -> ChatContext:
+        # Reconstruct ChatContext and nested dataclasses from dict
+        from .models import ChatMessage, SentimentProbabilities, ChatContext
+        chat_history = [ChatMessage(**msg) for msg in context_dict['chat_history']]
+        sentiment = SentimentProbabilities(**context_dict['sentiment_probabilities'])
+        return ChatContext(
+            chat_history=chat_history,
+            current_user=context_dict['current_user'],
+            sentiment_probabilities=sentiment
+        )
 
     async def evaluate_models_with_prompts(
         self,
