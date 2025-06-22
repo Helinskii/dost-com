@@ -1,10 +1,10 @@
 import os
 import asyncio
 from dotenv import load_dotenv
-from .test_data import TestDataGenerator
-from .providers import OpenAIProvider, AnthropicProvider, GeminiProvider
-from .pipeline import EvaluationPipeline
-from .report import ReportGenerator
+from test_data import TestDataGenerator
+from providers import OpenAIProvider, AnthropicProvider, GeminiProvider
+from pipeline import EvaluationPipeline
+from report import ReportGenerator
 
 async def generate_and_store_suggestions_main():
     load_dotenv()
