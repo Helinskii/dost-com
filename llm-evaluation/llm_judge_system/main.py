@@ -96,9 +96,5 @@ if __name__ == "__main__":
     print("- Positivity impact scoring")
     print("- Multiple prompt variants")
     print("- Support for OpenAI, Anthropic, and Google Gemini models")
-    print("\nTo generate suggestions:")
-    print("python -m llm_judge_system.main generate")
-    print("\nTo evaluate stored suggestions:")
-    print("python -m llm_judge_system.main evaluate")
     # By default, call the generate function
     asyncio.run(generate_and_store_suggestions_main())
