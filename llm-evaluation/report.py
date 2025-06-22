@@ -8,7 +8,7 @@ import plotly.express as px
 import matplotlib.pyplot as plt
 import seaborn as sns
 from plotly.subplots import make_subplots
-from .models import EvaluationResult
+from models import EvaluationResult
 
 class ReportGenerator:
     def __init__(self, results_df: pd.DataFrame):

@@ -1,7 +1,7 @@
 import time
 from typing import List
-from .models import ChatContext, ResponseSuggestions
-from .prompts import PromptVariants
+from models import ChatContext, ResponseSuggestions
+from prompts import PromptVariants
 
 class SuggestionGenerator:
     """Generates response suggestions using specified LLM"""

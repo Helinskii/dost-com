@@ -1,6 +1,6 @@
 import random
 from typing import List
-from .models import ChatMessage, SentimentProbabilities, ChatContext
+from models import ChatMessage, SentimentProbabilities, ChatContext
 
 class TestDataGenerator:
     @staticmethod

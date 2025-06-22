@@ -3,8 +3,8 @@ import pandas as pd
 from datetime import datetime
 from typing import List, Dict, Any
 import json
-from .llm_judge import LLMJudge
-from .models import ChatContext, ResponseSuggestions, EvaluationResult
+from llm_judge import LLMJudge
+from models import ChatContext, ResponseSuggestions, EvaluationResult
 
 class EvaluationPipeline:
     """Main pipeline for running evaluations across multiple models"""
@@ -20,7 +20,7 @@ class EvaluationPipeline:
         output_file: str = "suggestions.jsonl"
     ):
         """Generate suggestions and store them in a JSONL file for later evaluation."""
-        from .suggestion_generator import SuggestionGenerator
+        from suggestion_generator import SuggestionGenerator
         with open(output_file, 'w') as f:
             for context_idx, context in enumerate(test_contexts):
                 logging.info(f"Generating suggestions for context {context_idx + 1}/{len(test_contexts)}")
@@ -92,7 +92,7 @@ class EvaluationPipeline:
 
     def _reconstruct_context(self, context_dict: dict) -> ChatContext:
         # Reconstruct ChatContext and nested dataclasses from dict
-        from .models import ChatMessage, SentimentProbabilities, ChatContext
+        from models import ChatMessage, SentimentProbabilities, ChatContext
         chat_history = [ChatMessage(**msg) for msg in context_dict['chat_history']]
         sentiment = SentimentProbabilities(**context_dict['sentiment_probabilities'])
         return ChatContext(
@@ -116,7 +116,7 @@ class EvaluationPipeline:
             for model_name, provider in model_providers.items():
                 for prompt_variant in prompt_variants:
                     # You must generate suggestions before evaluation
-                    from .suggestion_generator import SuggestionGenerator
+                    from suggestion_generator import SuggestionGenerator
                     sugg_gen = SuggestionGenerator(provider)
                     suggestions = await sugg_gen.generate_suggestions(context, prompt_variant)
                     evaluation = await self.judge.evaluate(context, suggestions)

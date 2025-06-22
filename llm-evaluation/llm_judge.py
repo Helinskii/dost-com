@@ -1,7 +1,7 @@
 import time
 import json
 import logging
-from .models import ChatContext, ResponseSuggestions, EvaluationResult, EvaluationMetrics
+from models import ChatContext, ResponseSuggestions, EvaluationResult, EvaluationMetrics
 
 class LLMJudge:
     """Evaluates response suggestions using LLM-as-judge approach"""
