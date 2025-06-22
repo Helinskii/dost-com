@@ -20,7 +20,7 @@ class LLMProvider(ABC):
         pass
 
 class OpenAIProvider(LLMProvider):
-    def __init__(self, model: str = "gpt-4-turbo-preview"):
+    def __init__(self, model: str = "gpt-40-mini-2025-04-14"):
         self.api_key = os.getenv("OPENAI_API_KEY")
         if not self.api_key:
             raise ValueError("OPENAI_API_KEY not set in environment.")

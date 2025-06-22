@@ -11,46 +11,45 @@ async def main():
     import logging
     from datetime import datetime
     config = {
-        "num_test_contexts": 10,
+        "num_test_contexts": 1,
         "models_to_test": {
-            "gpt-4": "gpt-4-turbo-preview",
-            "gpt-3.5": "gpt-3.5-turbo",
-            "claude-3-opus": "claude-3-opus-20240229",
-            "claude-3-sonnet": "claude-3-sonnet-20240229",
+            "gpt-4.1-mini": "gpt-4.1-mini-2025-04-14",
+            "gpt-4o-mini": "gpt-4o-mini-2024-07-18",
+            "gemini-flash": "gemini-2.0-flash",
             "gemini-pro": "gemini-1.5-pro"
         },
-        "judge_model": "gpt-4-turbo-preview",
+        "judge_model": "gpt-4o-mini-2024-07-18",
         "prompt_variants": ["base", "no_positivity", "no_sentiment"]
     }
     providers = {}
+    # Initialize providers based on config keys
     if os.getenv("OPENAI_API_KEY"):
-        try:
-            providers["gpt-4"] = OpenAIProvider(config["models_to_test"]["gpt-4"])
-            providers["gpt-3.5"] = OpenAIProvider(config["models_to_test"]["gpt-3.5"])
-        except Exception as e:
-            logging.warning(f"Failed to initialize OpenAI providers: {e}")
-    if os.getenv("ANTHROPIC_API_KEY"):
-        try:
-            providers["claude-3-opus"] = AnthropicProvider(config["models_to_test"]["claude-3-opus"])
-            providers["claude-3-sonnet"] = AnthropicProvider(config["models_to_test"]["claude-3-sonnet"])
-        except Exception as e:
-            logging.warning(f"Failed to initialize Anthropic providers: {e}")
+        for key in ["gpt-4.1-mini", "gpt-4o-mini"]:
+            if key in config["models_to_test"]:
+                try:
+                    providers[key] = OpenAIProvider(config["models_to_test"][key])
+                except Exception as e:
+                    logging.warning(f"Failed to initialize OpenAI provider {key}: {e}")
     if os.getenv("GOOGLE_API_KEY"):
-        try:
-            providers["gemini-pro"] = GeminiProvider(config["models_to_test"]["gemini-pro"])
-        except Exception as e:
-            logging.warning(f"Failed to initialize Gemini provider: {e}")
+        for key in ["gemini-flash", "gemini-pro"]:
+            if key in config["models_to_test"]:
+                try:
+                    providers[key] = GeminiProvider(config["models_to_test"][key])
+                except Exception as e:
+                    logging.warning(f"Failed to initialize Gemini provider {key}: {e}")
     if not providers:
         logging.error("No valid API keys provided. Please update your .env file.")
         return
     judge_provider = None
-    if os.getenv("OPENAI_API_KEY"):
-        judge_provider = OpenAIProvider(config["judge_model"])
-    elif os.getenv("GOOGLE_API_KEY"):
-        judge_provider = GeminiProvider("gemini-1.5-pro")
-        logging.info("Using Gemini as judge since OpenAI key not available")
-    else:
-        logging.error("No judge model available. Need either OpenAI or Google API key.")
+    # Use the judge_model from config, defaulting to OpenAI if possible
+    judge_model_name = config["judge_model"]
+    if judge_model_name in config["models_to_test"]:
+        if judge_model_name.startswith("gpt-") and os.getenv("OPENAI_API_KEY"):
+            judge_provider = OpenAIProvider(config["models_to_test"][judge_model_name])
+        elif judge_model_name.startswith("gemini-") and os.getenv("GOOGLE_API_KEY"):
+            judge_provider = GeminiProvider(config["models_to_test"][judge_model_name])
+    if judge_provider is None:
+        logging.error("No judge model available. Please check your config and API keys.")
         return
     logging.info("Generating test contexts...")
     test_contexts = TestDataGenerator.generate_test_contexts(config["num_test_contexts"])
