@@ -22,32 +22,32 @@ class EvaluationPipeline:
     ):
         """Generate suggestions and store them in a JSONL file for later evaluation."""
         from suggestion_generator import SuggestionGenerator
-        with open(output_file, 'w') as f:
-            for context_idx, context in enumerate(test_contexts):
-                logging.info(f"Generating suggestions for context {context_idx + 1}/{len(test_contexts)}")
-                for model_name, provider in model_providers.items():
-                    sugg_gen = SuggestionGenerator(provider)
-                    for prompt_variant in prompt_variants:
-                        suggestions = await sugg_gen.generate_suggestions(context, prompt_variant)
-                        # Store all info needed for later evaluation
-                        record = {
-                            'context_id': context_idx,
-                            'model_name': model_name,
-                            'prompt_variant': prompt_variant,
-                            'suggestions': {
-                                'suggestion_1': suggestions.suggestion_1,
-                                'suggestion_2': suggestions.suggestion_2,
-                                'suggestion_3': suggestions.suggestion_3,
-                            },
-                            'generation_time': suggestions.generation_time,
-                            'chat_context': context,
-                            'timestamp': datetime.now().isoformat()
-                        }
-                        # Custom encoder for dataclasses
-                        def default(obj):
-                            if hasattr(obj, '__dict__'):
-                                return obj.__dict__
-                            return str(obj)
+        for context_idx, context in enumerate(test_contexts):
+            logging.info(f"Generating suggestions for context {context_idx + 1}/{len(test_contexts)}")
+            for model_name, provider in model_providers.items():
+                sugg_gen = SuggestionGenerator(provider)
+                for prompt_variant in prompt_variants:
+                    suggestions = await sugg_gen.generate_suggestions(context, prompt_variant)
+                    # Store all info needed for later evaluation
+                    record = {
+                        'context_id': context_idx,
+                        'model_name': model_name,
+                        'prompt_variant': prompt_variant,
+                        'suggestions': {
+                            'suggestion_1': suggestions.suggestion_1,
+                            'suggestion_2': suggestions.suggestion_2,
+                            'suggestion_3': suggestions.suggestion_3,
+                        },
+                        'generation_time': suggestions.generation_time,
+                        'chat_context': context,
+                        'timestamp': datetime.now().isoformat()
+                    }
+                    # Custom encoder for dataclasses
+                    def default(obj):
+                        if hasattr(obj, '__dict__'):
+                            return obj.__dict__
+                        return str(obj)
+                    with open(output_file, 'a') as f:
                         f.write(json.dumps(record, default=default) + '\n')
         logging.info(f"Suggestions written to {output_file}")
 
