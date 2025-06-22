@@ -1,103 +1,154 @@
 import openai
 import os
 from dotenv import load_dotenv
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
+import requests
 
-###########Uncomment this For Ollama LLMs############
-# import requests
-# OLLAMA_URL = "http://localhost:11434/api/generate"
-# MODEL_NAME = "tinyllama"
-
-
-############Uncomment this for HuggingFace LLMs########
-# from transformers import AutoModelForCausalLM, AutoTokenizer
-# import torch
-# MODEL_NAME = "distilgpt2"
-# tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-# model = AutoModelForCausalLM.from_pretrained(MODEL_NAME).to("cpu")
-
-############Uncomment this for OpenAI LLMs############
 load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
-MODEL_NAME = "gpt-4o-mini"
-
-## Formats the retrieved RAG chat context into a newline-separated string
-def format_rag_context(chat_context):
-    return "\n".join(
-        f"{entry['sender']}: {entry['message']} (emotion: {entry['sentiment']})"
-        for entry in chat_context
-    )
 
 ## Builds the prompt for the LLM using the recent message and context history
-def build_rag_prompt(recent_entry, context_history):
-    formatted_context = format_rag_context(context_history)
+def build_rag_prompt(recent_entry, context_history=None):
+
+    username = recent_entry.get('Sender', {})
+    message = recent_entry.get('Message', {})
+    emotion_detected = recent_entry.get("Sentiment", {})
+    # sorted_sentiments = sorted(sentiment_scores.items(), key=lambda x: x[1], reverse=True)
+    # sentiment_text = ", ".join([f"{k}: {round(v * 100)}%" for k, v in sorted_sentiments]) or "No dominant emotion detected"
+
+    # Filter context to include the user's own messages
+    own_messages = [
+        f"{entry['sender']}: {entry['message']} (emotion: {entry['sentiment']})"
+        for entry in context_history if entry.get('sender') == username
+    ]
+    own_context = f"### {username}'s Previous Messages:\n" + "\n".join(own_messages) if own_messages else ""
+
+    # Filter context to exclude the user's own messages
+    others_messages = [
+        f"{entry['sender']}: {entry['message']} (emotion: {entry['sentiment']})"
+        for entry in context_history if entry.get('sender') != username
+    ]
+    others_context = f"### Messages from Other Users:\n" + "\n".join(others_messages) if others_messages else ""
 
     prompt = f"""
-You are an empathetic and emotionally intelligent assistant in a group chat system.
 
-Below is:
-1. The recent message along with its detected emotion.
-2. The relevant conversation history retrieved via RAG.
+You are an emotionally intelligent assistant embedded in a group chat support system.
+The current user's name is: {username}
 
-Your job is to understand the emotional tone and context, and suggest 1 to 3 emotionally appropriate, kind, and constructive messages that would help keep the conversation positive and supportive.
+Your task is to Understand the emotional tone and context, and Generate kind and constructive messages that someone else in the group chat can respond with.
 
-### Recent Message:
-{recent_entry['sender']}: {recent_entry['message']} (emotion: {recent_entry['sentiment']})
+Take into account:
+- The emotion of the recent message
+- The user's own past messages if there are any to understand what they're going through
+- Other users' past responses if there are any to maintain coherence and empathy
 
-### Context History:
-{formatted_context}
+### Recent Message from {username}:
+{message}  
+Emotion: {emotion_detected}
+
+{own_context}
+
+{others_context}
 
 ### Task:
-Provide 1 to 3 appropriate, supportive replies that someone in the chat could respond with next.
-Do not include any explanations or labels, just the suggestions.
+Suggest 1 to 3 supportive, emotionally aware replies that a group member might send in response.
+Guidelines:
+- Do NOT assume how many people are in the group. Avoid phrases like “just the two of us” or “three of us”.
+- Do NOT include usernames or any names.
+- Do NOT number the suggestions.
+- Keep replies short (under 150 characters) and kind.
+- Return only the raw replies (no labels or explanations).
 """
     return prompt.strip()
 
-############Uncomment this for OpenAI LLMs###########
-def get_openai_rag_response(recent_entry, context_history):
-    prompt = build_rag_prompt(recent_entry, context_history)
+############Uncomment this for OpenAI LLM and Comment other###########
+def get_llm_rag_response(recent_entry, context_history):
 
+    ############Uncomment this for OpenAI LLMs############
+    openai.api_key = os.getenv("OPENAI_API_KEY")
+    MODEL_NAME = "gpt-4o-mini"
+
+    prompt = build_rag_prompt(recent_entry, context_history)
+    
     response = openai.chat.completions.create(
         model=MODEL_NAME,
         messages=[
-            {"role": "system", "content": "You are a kind, context-aware assistant helping in group chats."},
+            {"role": "system", "content": "You are a empathetic and kind, context-aware intelligent assistant helping in group chats."},
             {"role": "user", "content": prompt}
         ],
         temperature=0.7,
         max_tokens=250,
     )
-    return response.choices[0].message.content.strip()
+    content = response.choices[0].message.content
+    raw_text = content.strip() if content is not None else ""
+
+    suggestions = [
+        line.strip().replace('\n', ' ')
+        for line in raw_text.split('\n\n')
+        if line.strip()
+    ]
+
+    return suggestions[:3]  # Return only the first 3 suggestions
 
 
-##########Uncomment this for Ollama LLMs#############
-# def get_tinyllama_rag_response(recent_entry, context_history):
-#     prompt = build_rag_prompt(recent_entry, context_history)
 
-#     response = requests.post(OLLAMA_URL, json={
-#         "model": MODEL_NAME,
-#         "prompt": prompt,
-#         "stream": False
-#     })
+    # #########Uncomment this for HuggingFace LLM and Comment other##########
+    # MODEL_NAME = "distilgpt2"
+    # tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+    # model = AutoModelForCausalLM.from_pretrained(MODEL_NAME).to("cpu")
+    # model.eval()
+    # prompt = build_rag_prompt(recent_entry, context_history)
+    # inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=1024)
+    # with torch.no_grad():
+    #     output = model.generate(
+    #     **inputs,
+    #     max_new_tokens=100,
+    #     do_sample=True,
+    #     temperature=0.7,
+    #     top_k=50,
+    #     top_p=0.95,
+    #     pad_token_id=tokenizer.eos_token_id
+    # )
 
-#     if response.status_code == 200:
-#         return response.json()['response'].strip()
-#     else:
-#         return f"Error: {response.status_code} - {response.text}"
+    # decoded = tokenizer.decode(output[0], skip_special_tokens=True)
+
+    # # Remove prompt from beginning of decoded output
+    # generated = decoded[len(prompt):].strip()
+
+    # # Split suggestions by line or double newline
+    # suggestions = [line.strip() for line in generated.split('\n') if line.strip()]
+
+    # return suggestions
 
 
-##########Uncomment this for HuggingFace LLMs##########
-# def get_hf_rag_response(recent_entry, context_history, max_tokens=100):
-#     prompt = build_rag_prompt(recent_entry, context_history)
-#     inputs = tokenizer(prompt, return_tensors="pt")
 
-#     output = model.generate(
-#         **inputs,
-#         max_new_tokens=100,
-#         do_sample=True,
-#         temperature=0.7,
-#         top_k=50,
-#         top_p=0.95
-#     )
 
-#     decoded = tokenizer.decode(output[0], skip_special_tokens=True)
-#     # Return only the new content after the prompt
-#     return decoded[len(prompt):].strip()
+    # #########Uncomment this for Ollama LLM and Comment other#############
+    # OLLAMA_URL = "http://localhost:11434/api/generate"
+    # MODEL_NAME = "tinyllama"
+
+    # prompt = build_rag_prompt(recent_entry, context_history)
+
+    # response = requests.post(OLLAMA_URL, json={
+    #     "model": MODEL_NAME,
+    #     "prompt": prompt,
+    #     "stream": False
+    # })
+
+    # if response.status_code == 200:
+    #     raw_text = response.json()['response'].strip()
+
+    #     Split and clean suggestions
+    #     suggestions = [
+    #       line.strip().replace('\n', ' ')
+    #       for line in raw_text.split('\n\n')
+    #       if line.strip()
+    #     ]
+    #     return suggestions[:3]  # Return only the first 3 suggestions
+    # else:
+    #     return f"Error: {response.status_code} - {response.text}"
+
+
+
+
+

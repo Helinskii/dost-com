@@ -1,0 +1,136 @@
+\documentclass{ecai}
+\usepackage{graphicx}
+\usepackage{latexsym}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{multirow}
+
+\title{Enhanced Text Communication System Using Sentiment-Based Prompting for End-User}
+
+\author{
+Deepshikhar Tyagi\textsuperscript{1},
+Ishwer Kumar\textsuperscript{1},
+Manish Kumar Singh\textsuperscript{1},
+Rishabh Mehrotra\textsuperscript{1},
+Sanket Jain\textsuperscript{1},
+Shubham Saha\textsuperscript{1},
+Yuvashree Pamujula\textsuperscript{1} \\
+\textsuperscript{1}Indian Institute of Science, Bengaluru, India \\
+\texttt{\{deepshikhar, ishwer, manishs, rishabhm, sanketj, shubhams, yuvashree\}@iisc.ac.in}}
+
+
+\begin{document}
+\maketitle
+
+\section{Abstract}
+Today's chat applications are built around the same building blocks which were used when they were emerging - one-on-one chats, groups, multiple modalities (text, audio, video, emojis, etc.), and any new chat application has pretty much the same functionality.
+On the other hand, more and more people are communicating over text than any other form of communication. But text has one problem - the tone (or body) of the conversation is not always apparent, and may require further clarification. It may eventually even lead to misunderstandings while communicating. This happens so often that multiple modalities are then equipped in order to clarify, elaborate or communicate the same sentiment.
+This paper presents an application to enhance our texting experience, and add another dimension to communication through this medium. The chat application presented in this paper does the following:
+\begin{itemize}
+  \item Understanding conversation sentiment in real-time
+  \item Provide live analysis about the sentiment of parts of the conversation or last (immediate) text
+  \item Based on the sentiment understanding and context of the conversation, provide suggestions/prompts to the user to respond appropriately, or tailor it before sending
+\end{itemize}
+This application aims to solidify communication through text seamlessly by improving user understanding and judgment, while retaining the existing methods.
+\end{abstract}
+
+\section{Introduction}
+\textbf{Problem Definition: } Despite the widespread use of chat applications in both personal and professional communication, current platforms lack the ability to interpret or convey the emotional tone behind textual messages. As a result, users often experience miscommunication, misunderstandings, or emotional ambiguity, especially in sensitive conversations. This limitation is inherent to text as a medium, which lacks non-verbal cues such as tone, facial expressions, or gestures.
+This project aims to address this gap by developing an intelligent chat interface that can analyze the sentiment of messages in real-time and offer contextually appropriate prompt suggestions to the user before they respond. The system enhances communication clarity and helps users craft more empathetic, constructive replies by leveraging Natural Language Processing (NLP) and Large Language Models (LLMs). 
+
+\textbf{Problem Analysis: } Text-based communication suffers from the inability to transmit non-verbal emotional signals, leading to a disconnect between intent and interpretation. Even neutral-sounding messages can be misunderstood as passive-aggressive, rude, or dismissive, especially when the reader is under stress or in a professional setting.
+
+Attempts to solve this (like emojis, reactions, or voice notes) only partially bridge the gap and are often not suitable for formal contexts. While sentiment analysis models exist, they are rarely integrated into messaging platforms in a live and actionable form.
+
+Furthermore, users may not be aware of how their messages might be perceived emotionally. There is a need for a system that can detect emotional tone, and based on both sentiment and conversation context, provide real-time suggestions for rephrasing or responding appropriately. Such a system must work efficiently and unobtrusively, fitting naturally into the user's workflow.
+
+\section{Methodology / System Architecture}
+\textbf{Architecture:}
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.45\textwidth]{architecture.png}
+  \caption{System Architecture}
+\end{figure}
+
+\textbf{Components (Step 4 – Implementation):}
+\begin{itemize}
+  \item \textbf{Preprocessing:} Cleaning and tokenizing messages
+  \item \textbf{Sentiment Classification:} Using pre-trained BERT
+  \item \textbf{Regression Layer:} For fine-grained sentiment scoring
+  \item \textbf{Prompt Generator:} Using LLM APIs (OpenAI, Falcon)
+  \item \textbf{Frontend/Backend:} Built with Flask, integrated with HuggingFace models
+\end{itemize}
+
+\section{Experiments and Evaluation (Step 5)}
+\textbf{Dataset Used:} Enter text dataset name
+
+\textbf{Preprocessing:} Standard NLP preprocessing steps applied
+
+\textbf{Metrics:}
+\begin{itemize}
+  \item Classification: Accuracy, F1-score
+  \item Regression: MSE, RMSE, R\textsuperscript{2}
+  \item Prompt Evaluation: BLEU score
+\end{itemize}
+
+\begin{table}[h]
+  \centering
+  \begin{tabular}{@{}lccc@{}}
+    \toprule
+    Model & metric1 & metric2 & metric3 \\
+    \midrule
+    Baseline (BERT) & 0.00 & 0.00 & 0.00 \\
+    Our Model & 0.00 & 0.00 & 0.00 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Evaluation Results}
+\end{table}
+
+\section{Applications and Conclusion}
+\textbf{Applications:} Corporate communication, education platforms, therapy bots
+
+\textbf{Limitations:} Handling sarcasm, multilingual support, LLM latency
+
+\textbf{Future Work:} Personalization, lightweight deployment, on-device models
+
+\clearpage
+\section*{References}
+\begin{thebibliography}{9}
+\bibitem{ref1} Reference 1 detail \emph{  }.
+\bibitem{ref2} Reference 2 detail \emph{  }.
+\bibitem{ref3} Reference 3 detail \emph{  }.
+\end{thebibliography}
+
+\section*{Team Contributions}
+\begin{table}[h]
+  \centering
+  \begin{tabular}{|l|l|}
+    \hline
+    \textbf{Team Member} & \textbf{Contribution Area} \\
+    \hline
+    Deepshikhar Tyagi &    \\
+    Ishwer Kumar &    \\
+    Manish Kumar Singh &    \\
+    Rishabh Mehrotra &    \\
+    Sanket Jain &    \\
+    Shubham Saha &    \\
+    Yuvashree Pamujula &    \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\appendix
+\section*{Appendix}
+\subsection*{Architecture in Detail}
+Insert expanded architecture description and figure here.
+
+\subsection*{Sample Chat Screenshots}
+Include sample screenshots of chat UI with prompt suggestions.
+
+\subsection*{Hyperparameters and Prompt Templates}
+Describe model settings and sample LLM prompt templates.
+
+\subsection*{GitHub}
+Link to full source code and demo README.
+
+\end{document}
