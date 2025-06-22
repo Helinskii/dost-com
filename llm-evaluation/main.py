@@ -54,7 +54,7 @@ async def evaluate_stored_suggestions_main():
     load_dotenv()
     from datetime import datetime
     config = {
-        "judge_model": "gpt-4.1-mini"
+        "judge_model": "gemini-2.5-flash-lite-preview-06-17"
     }
     # Judge provider selection
     judge_model_name = config["judge_model"]
