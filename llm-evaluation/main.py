@@ -97,6 +97,33 @@ async def evaluate_stored_suggestions_main():
         print(f"{model}: {speed:.2f}s")
     print(f"\nDetailed reports available in: {report_dir}")
 
+async def resume_report_from_intermediate(intermediate_path="intermediate_results_20250622_193404.csv"):
+    import pandas as pd
+    if not os.path.exists(intermediate_path):
+        print(f"Intermediate results file not found: {intermediate_path}")
+        return
+    results_df = pd.read_csv(intermediate_path)
+    report_generator = ReportGenerator(results_df)
+    report_dir = report_generator.generate_full_report()
+    print(f"Evaluation complete! Reports saved to: {report_dir}")
+    summary_df = report_generator._generate_summary_statistics()
+    if summary_df is None or summary_df.empty:
+        print("No summary statistics available.")
+        return
+    print("\nOverall Quality Scores (averaged across prompt variants):")
+    model_avg_quality = summary_df.groupby('model')['avg_overall_quality'].mean().sort_values(ascending=False)
+    for model, score in model_avg_quality.items():
+        print(f"{model}: {score:.2f}")
+    print("\nPositivity Impact Scores:")
+    model_avg_positivity = summary_df.groupby('model')['avg_positivity_score'].mean().sort_values(ascending=False)
+    for model, score in model_avg_positivity.items():
+        print(f"{model}: {score:.2f}")
+    print("\nGeneration Speed (seconds):")
+    model_avg_speed = summary_df.groupby('model')['avg_generation_time'].mean().sort_values()
+    for model, speed in model_avg_speed.items():
+        print(f"{model}: {speed:.2f}s")
+    print(f"\nDetailed reports available in: {report_dir}")
+
 if __name__ == "__main__":
     print("LLM Judge Evaluation System - Modular Version")
     print("-" * 50)
@@ -107,4 +134,4 @@ if __name__ == "__main__":
     print("- Multiple prompt variants")
     print("- Support for OpenAI, Anthropic, and Google Gemini models")
     # By default, call the generate function
-    asyncio.run(evaluate_stored_suggestions_main())
+    asyncio.run(resume_report_from_intermediate())

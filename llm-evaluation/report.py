@@ -99,9 +99,9 @@ class ReportGenerator:
         """Create overall model comparison chart"""
         
         summary_df = self._generate_summary_statistics()
-        
-        # Group by model (averaging across prompt variants)
-        model_avg = summary_df.groupby('model').mean()
+        # Group by model (averaging across prompt variants), only numeric columns
+        numeric_cols = summary_df.select_dtypes(include='number').columns
+        model_avg = summary_df.groupby('model')[numeric_cols].mean()
         
         metrics = ['avg_relevance', 'avg_sentiment', 'avg_naturalness', 
                   'avg_helpfulness', 'avg_positivity', 'avg_diversity', 'avg_overall_quality']
