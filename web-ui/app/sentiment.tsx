@@ -166,7 +166,7 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages })
     setError(null);
 
     try {
-      const response = await fetch('https://64db-141-148-200-181.ngrok-free.app/predict', {
+      const response = await fetch('https://lynx-divine-lovely.ngrok-free.app/predict', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -178,7 +178,7 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages })
             content: msg.content,
             user: { name: msg.user.name },
             createdAt: msg.createdAt
-          })),
+          })).slice(-1),
           timestamp: new Date().toISOString()
         })
       });

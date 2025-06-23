@@ -24,6 +24,11 @@ function ChatPage() {
   const messagesRef = useRef<ChatMessage[]>([])
   const sendMessageRef = useRef<((content: string) => void) | null>(null)
 
+  // Local mode detection (set NEXT_PUBLIC_NODE_ENV=local in .env.local for local dev)
+  const isLocal = process.env.NEXT_PUBLIC_NODE_ENV === 'local'
+  // Local message store (in-memory)
+  const localMessagesRef = useRef<ChatMessage[]>([])
+
   // Use sentiment context
   const {
     sentimentData,
@@ -36,34 +41,52 @@ function ChatPage() {
     e.preventDefault()
     if (username.trim()) {
       setHasJoined(true)
+      // If local, load messages from local store
+      if (isLocal) {
+        setMessages(localMessagesRef.current)
+      }
     }
   }
 
-  // Update messages when they change from the chat component
+  // Update messages when they change from the chat component or local
   const handleMessageUpdate = useCallback((updatedMessages: ChatMessage[]) => {
     const hasChanged = JSON.stringify(messagesRef.current) !== JSON.stringify(updatedMessages)
     if (hasChanged) {
       messagesRef.current = updatedMessages
       setMessages(updatedMessages)
+      if (isLocal) {
+        localMessagesRef.current = updatedMessages
+      }
       console.log("Messages updated:", updatedMessages.length)
     }
-  }, [])
+  }, [isLocal])
 
   // Store the sendMessage function from RealtimeChat
   const handleSendMessageRef = useCallback((sendMessageFn: (content: string) => void) => {
     sendMessageRef.current = sendMessageFn
   }, [])
 
-  // Handle sending messages from AI suggestions
+  // Handle sending messages from AI suggestions or user
   const handleSendMessage = useCallback((messageContent: string) => {
     console.log('Sending AI suggestion:', messageContent)
-    
-    if (sendMessageRef.current) {
-      sendMessageRef.current(messageContent)
+    if (isLocal) {
+      // In local mode, append message locally
+      const newMsg: ChatMessage = {
+        id: Date.now().toString(),
+        content: messageContent,
+        user: { name: username },
+        createdAt: new Date().toISOString(),
+      }
+      const updated = [...messagesRef.current, newMsg]
+      handleMessageUpdate(updated)
     } else {
-      console.warn('Send message function not available')
+      if (sendMessageRef.current) {
+        sendMessageRef.current(messageContent)
+      } else {
+        console.warn('Send message function not available')
+      }
     }
-  }, [])
+  }, [isLocal, username, handleMessageUpdate])
 
   if (showArchitecture) {
     return <ArchitectureDiagram onClose={() => setShowArchitecture(false)} />
@@ -228,11 +251,13 @@ function ChatPage() {
               roomName={roomName}
               username={username}
               onMessage={handleMessageUpdate}
+              messages={isLocal ? messages : undefined}
               onSendMessageRef={handleSendMessageRef}
             />
           </div>
           
           <AIResponseSuggestions
+            roomName={roomName}
             messages={messages}
             username={username}
             onSendMessage={handleSendMessage}

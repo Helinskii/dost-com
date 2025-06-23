@@ -17,6 +17,7 @@ interface AISuggestion {
 }
 
 interface AIResponseSuggestionsProps {
+  roomName: string;
   messages: ChatMessage[];
   sentiments?: any; // Legacy prop
   onSendMessage: (message: string) => void;
@@ -25,6 +26,7 @@ interface AIResponseSuggestionsProps {
 }
 
 const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
+  roomName,
   username,
   messages,
   onSendMessage,
@@ -102,18 +104,15 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
         messageSentiments: Array.from(sentimentData.messageSentiments.entries()).slice(-5)
       };
 
-      const response = await fetch('/api/llm/suggestions', {
+      const response = await fetch('https://lynx-divine-lovely.ngrok-free.app/rag', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           username,
-          chatHistory: {
-            chatId: "",
-            messages: messages.slice(-10),
-            timestamp: new Date().toISOString()
-          },
+          chatId: roomName,
+          messages: messages.slice(-1),
           sentiment: sentimentPayload,
           timestamp: new Date().toISOString()
         })
@@ -124,7 +123,14 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
       }
 
       const data = await response.json();
-      setSuggestions(data.data || []);
+      // Expecting: { Response: [ ... ] }
+      const suggestionsArray = Array.isArray(data.Response) ? data.Response : [];
+      setSuggestions(
+        suggestionsArray.map((content: string, idx: number) => ({
+          id: `suggestion-${idx}`,
+          content,
+        }))
+      );
       lastProcessedMessageCount.current = messages.length;
       
     } catch (err) {

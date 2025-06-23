@@ -18,6 +18,7 @@ interface RealtimeChatProps {
   username: string
   onMessage?: (messages: ChatMessage[]) => void
   messages?: ChatMessage[]
+  onSendMessageRef?: (sendMessage: (content: string) => void) => void
 }
 
 /**
@@ -28,6 +29,7 @@ export const RealtimeChat = ({
   username,
   onMessage,
   messages: initialMessages = [],
+  onSendMessageRef,
 }: RealtimeChatProps) => {
   const { containerRef, scrollToBottom } = useChatScroll()
   
@@ -50,8 +52,15 @@ export const RealtimeChat = ({
   })
   const [newMessage, setNewMessage] = useState('')
 
-  // Merge realtime messages with initial messages
+  // Local mode detection (set NEXT_PUBLIC_NODE_ENV=local in .env.local for local dev)
+  const isLocal = process.env.NEXT_PUBLIC_NODE_ENV === 'local'
+
+  // Local message state for local mode
+  const [localMessages, setLocalMessages] = useState<ChatMessage[]>([])
+
+  // Merge messages: use localMessages in local mode, otherwise merge initial and realtime
   const allMessages = useMemo(() => {
+    if (isLocal) return localMessages
     const mergedMessages = [...initialMessages, ...realtimeMessages]
     // Remove duplicates based on message id
     const uniqueMessages = mergedMessages.filter(
@@ -61,7 +70,14 @@ export const RealtimeChat = ({
     const sortedMessages = uniqueMessages.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
 
     return sortedMessages
-  }, [initialMessages, realtimeMessages])
+  }, [isLocal, localMessages, initialMessages, realtimeMessages])
+
+  // In local mode, update localMessages when parent messages prop changes
+  useEffect(() => {
+    if (isLocal && initialMessages.length > 0) {
+      setLocalMessages(initialMessages)
+    }
+  }, [isLocal, initialMessages])
 
   // Update sentiment analysis ONLY when messages actually change
   // This is separate from the message sending flow
@@ -101,17 +117,46 @@ export const RealtimeChat = ({
     scrollToBottom()
   }, [allMessages, scrollToBottom])
 
+  // Expose sendMessage to parent via ref/callback
+  useEffect(() => {
+    if (onSendMessageRef) {
+      if (isLocal) {
+        // Local sendMessage: add to localMessages
+        onSendMessageRef((content: string) => {
+          const newMsg: ChatMessage = {
+            id: Date.now().toString(),
+            content,
+            user: { name: username },
+            createdAt: new Date().toISOString(),
+          }
+          setLocalMessages((msgs) => [...msgs, newMsg])
+        })
+      } else {
+        onSendMessageRef(sendMessage)
+      }
+    }
+  }, [onSendMessageRef, sendMessage, isLocal, username])
+
   // Handle sending messages - keep this simple and don't interfere with realtime flow
   const handleSendMessage = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault()
-      if (!newMessage.trim() || !isConnected) return
-
-      // Just send the message - let the realtime system handle the rest
-      sendMessage(newMessage)
-      setNewMessage('')
+      if (!newMessage.trim() || (!isConnected && !isLocal)) return
+      if (isLocal) {
+        const newMsg: ChatMessage = {
+          id: Date.now().toString(),
+          content: newMessage,
+          user: { name: username },
+          createdAt: new Date().toISOString(),
+        }
+        setLocalMessages((msgs) => [...msgs, newMsg])
+        setNewMessage('')
+      } else {
+        sendMessage(newMessage)
+        setNewMessage('')
+      }
     },
-    [newMessage, isConnected, sendMessage]
+    [newMessage, isConnected, isLocal, sendMessage, username]
   )
 
   // Get emotion display info
@@ -218,26 +263,25 @@ export const RealtimeChat = ({
                 'rounded-full bg-white/90 border-gray-200/50 text-sm transition-all duration-300',
                 'focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400',
                 'placeholder:text-gray-400',
-                isConnected && newMessage.trim() ? 'pr-12' : ''
+                (isConnected || isLocal) && newMessage.trim() ? 'pr-12' : ''
               )}
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              placeholder={isConnected ? "Type a message..." : "Connecting..."}
-              disabled={!isConnected}
+              placeholder={isConnected || isLocal ? "Type a message..." : "Connecting..."}
+              disabled={!(isConnected || isLocal)}
             />
             
             {/* Connection status indicator */}
             <div className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-2 h-2 rounded-full ${
-              isConnected ? 'bg-green-400' : 'bg-red-400'
+              (isConnected || isLocal) ? 'bg-green-400' : 'bg-red-400'
             }`} />
           </div>
-          
-          {isConnected && newMessage.trim() && (
+          {(isConnected || isLocal) && newMessage.trim() && (
             <Button
               className="aspect-square rounded-full bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg transition-all duration-200 animate-in fade-in slide-in-from-right-4"
               type="submit"
-              disabled={!isConnected}
+              disabled={!(isConnected || isLocal)}
             >
               <Send className="size-4" />
             </Button>
@@ -247,7 +291,7 @@ export const RealtimeChat = ({
         {/* Status indicator area */}
         <div className="mt-2 h-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {!isConnected && (
+            {!isConnected && !isLocal && (
               <span className="text-xs text-gray-400 flex items-center gap-1">
                 <div className="w-1 h-1 bg-gray-400 rounded-full animate-pulse"></div>
                 Connecting to {roomName}...
@@ -255,7 +299,7 @@ export const RealtimeChat = ({
             )}
           </div>
           
-          {isConnected && allMessages.length > 0 && (
+          {(isConnected || isLocal) && allMessages.length > 0 && (
             <div className="text-xs text-gray-400 flex items-center gap-1">
               <Brain className="w-3 h-3" />
               AI analyzing conversation sentiment
