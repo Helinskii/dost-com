@@ -6,10 +6,10 @@ from sentence_transformers import SentenceTransformer
 import chromadb
 from chromadb.config import Settings
 
-model = SentenceTransformer('all-MiniLM-L6-v2')
+# model = SentenceTransformer('all-MiniLM-L6-v2')
 
-chroma_client = chromadb.PersistentClient(path="chroma_store")
-collection = chroma_client.get_or_create_collection(name="chat_inputs", metadata={"hnsw:space": "cosine"})
+# chroma_client = chromadb.PersistentClient(path="chroma_store")
+# collection = chroma_client.get_or_create_collection(name="chat_inputs", metadata={"hnsw:space": "cosine"})
 
 # Message Example:
 '''
@@ -40,6 +40,11 @@ def preprocess_message(message):
     return combined_text
 
 def message_store(message):
+    chroma_client = chromadb.PersistentClient(path="chroma_store")
+    collection = chroma_client.get_or_create_collection(name="chat_inputs", metadata={"hnsw:space": "cosine"})
+
+    model = SentenceTransformer('all-MiniLM-L6-v2')
+  
     emotion = message["sentiment"]
     combined_text = preprocess_message(message)
     print(f"Text Stored: {combined_text}\tEmotion: {emotion}")

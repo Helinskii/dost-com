@@ -5,8 +5,8 @@ sys.path.append(os.path.abspath('../sentiment_analytics'))
 sys.path.append(os.path.abspath('../RAG'))
 
 from sentiment_analysis import sentiment_analytics
-from sentiment_infer import predict_emotion, predict_compl_emotion
-from RAG import rag, call_rag
+from sentiment_infer import predict_emotion
+from rag import call_rag
 from message_store import message_store
 import chromadb
 
@@ -17,6 +17,23 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+
+import logging
+
+log_formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+
+# File handler
+file_handler = logging.FileHandler("sentiment_api.log")
+file_handler.setLevel(logging.DEBUG)
+file_handler.setFormatter(log_formatter)
+
+# Stream (console) handler
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+console_handler.setFormatter(log_formatter)
+
+logging.basicConfig(level=logging.DEBUG, handlers=[file_handler, console_handler])
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -42,61 +59,76 @@ class ChatPayload(BaseModel):
     messages: list[Message]
     timestamp: str
 
+class DB(BaseModel):
+    dbName: str
+
 @app.post("/predict")
 def predict(input: ChatPayload):
+    logger.info(f"/predict called with chatId={input.chatId}, num_messages={len(input.messages)}")
     last_message = input.messages[-1].content if input.messages else ""
-    emotion_last_msg = predict_emotion(last_message)
-    all_msg = [msg.content for msg in input.messages]
-    emotion_score, text_emotion = predict_compl_emotion(all_msg)
+    logger.debug(f"Last message: {last_message}")
+    emotion_last_msg, emotion_scores = predict_emotion(last_message)
+    # all_msg = [msg.content for msg in input.messages]
+    # emotion_score, text_emotion = predict_compl_emotion(all_msg)
+    logger.info(f"Predicted emotion for last message: {emotion_last_msg}")
     return {
         "emotion_last_message": emotion_last_msg,
-        "emotional_scores": emotion_score,
-        "emotion_per_text": text_emotion
+        "emotional_scores": emotion_scores
+        # "emotion_per_text": text_emotion
         }
 
 @app.post("/analyse")
 def analyse(input: ChatPayload):
+    logger.info(f"/analyse called with chatId={input.chatId}, num_messages={len(input.messages)}")
     last_message = input.messages[-1].content if input.messages else ""
-    emotion_last_msg = predict_emotion(last_message)
+    logger.debug(f"Last message: {last_message}")
+    emotion_last_msg, emotion_scores = predict_emotion(last_message)
     analysis_arg = input.model_dump()
-    analysis_arg['messages'][0]['sentiment'] = emotion_last_msg
-    
+    analysis_arg['messages'][0]['sentiment'] = emotion_scores
     user_emo_dist = sentiment_analytics(analysis_arg, [10])
     user_emo_dist = convert_np(user_emo_dist)
-
+    logger.info(f"User emotion distribution calculated.")
     return user_emo_dist
 
 @app.post("/rag")
 def respond(input: ChatPayload):
+    logger.info(f"/rag called with chatId={input.chatId}, num_messages={len(input.messages)}")
+    collection_name = "chat_inputs"
+
     embedding = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
     vectorstore = Chroma(
-        collection_name="chat_inputs",
+        collection_name=collection_name,
         embedding_function=embedding,
         persist_directory="chroma_store",
         collection_metadata={"hnsw:space": "cosine"}
     )
-
     last_message = input.messages[-1].content if input.messages else ""
-    emotion_last_msg = predict_emotion(last_message)
+    logger.debug(f"Last message: {last_message}")
+    emotion_last_msg, emotion_scores = predict_emotion(last_message)
     rag_arg = input.model_dump()
     rag_arg = rag_arg['messages'][0]
     rag_arg['sentiment'] = emotion_last_msg
-    # DEBUG
-    # print(f"RAG Function Arg: {rag_arg}")
+    logger.debug(f"Calling RAG with arg: {rag_arg}")
     rag_response = call_rag(rag_arg, vectorstore)
-    print(rag_response)
-    message_store(rag_arg)
+    logger.info(f"RAG response: {rag_response}")
     
+    message_store(rag_arg)
+
     return rag_response
 
 @app.post("/clear_db")
-async def clear_database():
+async def clear_database(db: DB):
     try:
-        collection_name = "chat_inputs"
+        logger.info(f"/clear_db called for dbName={db.dbName}")
+        collection_name = db.dbName
         chroma_client = chromadb.PersistentClient(path="chroma_store")
-        chroma_client.delete_collection("chat_inputs")
+        chroma_client.delete_collection(collection_name)
+        logger.info(f"Chroma DB '{collection_name}' collection cleared.")
+        os.remove("user_dist.pkl")
+        logger.info(f"Removed sentiment analysis file: user_dist.pkl")
         return JSONResponse(status_code=200, content={"message": f"Chroma DB '{collection_name}' collection cleared."})
     except Exception as e:
+        logger.error(f"Error clearing DB: {e}")
         return JSONResponse(status_code=500, content={"error": str(e)})
     
 

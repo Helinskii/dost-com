@@ -223,19 +223,20 @@ id2emo = {
     5: 'surprise'
 }
 
-user_emo_dist = sentiment_analytics(hist1, [10])
-user_emo_dist = sentiment_analytics(hist2, [10])
-user_emo_dist = sentiment_analytics(hist3, [10])
+if __name__ == '__main__':
+  user_emo_dist = sentiment_analytics(hist1, [10])
+  user_emo_dist = sentiment_analytics(hist2, [10])
+  user_emo_dist = sentiment_analytics(hist3, [10])
 
-for user, values in user_emo_dist.items():
-    print(user, ' mu: ', values['mu'])
-    # print(user, ' cov: ', values['cov'])
-    print(user, ' coeffvar: ', values['coeffvar'])
-    print(user, ' mu_10: ', values['mu_10'])
-    print(user, ' coeffvar_10: ', values['coeffvar_10'])
-    print(user, ' volatile: ', values['volatile'])
-    # print(user, ': ', values['cov_10'])
-    print(user, ' hist: ', (values['hist']))
+  for user, values in user_emo_dist.items():
+      print(user, ' mu: ', values['mu'])
+      # print(user, ' cov: ', values['cov'])
+      print(user, ' coeffvar: ', values['coeffvar'])
+      print(user, ' mu_10: ', values['mu_10'])
+      print(user, ' coeffvar_10: ', values['coeffvar_10'])
+      print(user, ' volatile: ', values['volatile'])
+      # print(user, ': ', values['cov_10'])
+      print(user, ' hist: ', (values['hist']))
 
 # NOTES:
 # user = '__GrOuP__' provides group statistics
