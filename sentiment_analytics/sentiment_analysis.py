@@ -46,7 +46,7 @@ hist1={
       "user": {
         "name": "god"
       },
-      "sentiment": "sadness",
+      "sentiment": {"sadness": 1, "joy": 0, "love": 0, "anger": 0, "fear": 0, "surprise": 0},
       "createdAt": "2025-06-07T11:28:57.676Z"
     }
   ],
@@ -62,7 +62,7 @@ hist2={
       "user": {
         "name": "test"
       },
-      "sentiment": "joy",
+      "sentiment": {"sadness": 0, "joy": 1, "love": 0, "anger": 0, "fear": 0, "surprise": 0},
       "createdAt": "2025-06-07T11:29:07.095Z"
     }
   ],
@@ -77,7 +77,7 @@ hist3={
       "createdAt": "2025-06-07T11:29:16.624Z",
       "id": "87b12e2b-6b8f-4562-ad65-487280d8e0aa",
       "user": {"name": "god"},
-      "sentiment": "love",
+      "sentiment": {"sadness": 0, "joy": 0, "love": 1, "anger": 0, "fear": 0, "surprise": 0},
     }
   ],
   "timestamp": "2025-06-07T11:29:18.624Z"
@@ -126,12 +126,11 @@ def sentiment_analytics(chat_hist, buffers):
     last_msg = chat_hist['messages'][-1]
     last_usr = last_msg['user']['name']
     new_emo = np.zeros(len(emo2id))
-    ### Shubham: Instead of a one-hot array, passing only valid sentiment
-    # for key, val in last_msg['sentiment'].items():
-    #     # val = np.random.rand(1,) * (emo_high[key] - emo_low[key]) + emo_low[key]
-    #     new_emo[emo2id[key]] = val
-    emo = last_msg['sentiment']
-    new_emo[emo2id[emo]] = 1
+    for key, val in last_msg['sentiment'].items():
+        # val = np.random.rand(1,) * (emo_high[key] - emo_low[key]) + emo_low[key]
+        new_emo[emo2id[key]] = val
+    # emo = last_msg['sentiment']
+    # new_emo[emo2id[emo]] = 1
 
     new_emo /= np.sum(new_emo)
 
@@ -224,19 +223,19 @@ id2emo = {
     5: 'surprise'
 }
 
-# user_emo_dist = sentiment_analytics(hist1, [10])
-# user_emo_dist = sentiment_analytics(hist2, [10])
-# user_emo_dist = sentiment_analytics(hist3, [10])
+user_emo_dist = sentiment_analytics(hist1, [10])
+user_emo_dist = sentiment_analytics(hist2, [10])
+user_emo_dist = sentiment_analytics(hist3, [10])
 
-# for user, values in user_emo_dist.items():
-#     print(user, ' mu: ', values['mu'])
-#     # print(user, ' cov: ', values['cov'])
-#     print(user, ' coeffvar: ', values['coeffvar'])
-#     print(user, ' mu_10: ', values['mu_10'])
-#     print(user, ' coeffvar_10: ', values['coeffvar_10'])
-#     print(user, ' volatile: ', values['volatile'])
-#     # print(user, ': ', values['cov_10'])
-#     print(user, ' hist: ', (values['hist']))
+for user, values in user_emo_dist.items():
+    print(user, ' mu: ', values['mu'])
+    # print(user, ' cov: ', values['cov'])
+    print(user, ' coeffvar: ', values['coeffvar'])
+    print(user, ' mu_10: ', values['mu_10'])
+    print(user, ' coeffvar_10: ', values['coeffvar_10'])
+    print(user, ' volatile: ', values['volatile'])
+    # print(user, ': ', values['cov_10'])
+    print(user, ' hist: ', (values['hist']))
 
 # NOTES:
 # user = '__GrOuP__' provides group statistics
