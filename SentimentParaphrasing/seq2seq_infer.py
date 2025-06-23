@@ -8,7 +8,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # seq2seq_model = T5ForConditionalGeneration.from_pretrained("../results_seq2seq_T5_def/checkpoint-500")
 
 s2s_tokenizer = BartTokenizer.from_pretrained("facebook/bart-base")
-seq2seq_model = BartForConditionalGeneration.from_pretrained("../results_seq2seq_BART_def_0622/checkpoint-100")
+seq2seq_model = BartForConditionalGeneration.from_pretrained("results_seq2seq_BART_def_0622/checkpoint-100")
 
 seq2seq_model = seq2seq_model.to(device)
 seq2seq_model.eval()
@@ -22,4 +22,5 @@ def paraphrase(text):
         generated_texts = s2s_tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
     return generated_texts
 
-print(paraphrase("im going to smash that window"))
+if __name__ == '__main__':
+    print(paraphrase("im going to smash that window"))

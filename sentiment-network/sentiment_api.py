@@ -3,12 +3,14 @@ import os
 
 sys.path.append(os.path.abspath('../sentiment_analytics'))
 sys.path.append(os.path.abspath('../RAG'))
+sys.path.append(os.path.abspath('../SentimentParaphrasing'))
 
 from sentiment_analysis import sentiment_analytics
 from sentiment_infer import predict_emotion
 from rag import call_rag
 from message_store import message_store
 import chromadb
+from seq2seq_infer import paraphrase
 
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
@@ -75,6 +77,17 @@ def predict(input: ChatPayload):
         "emotion_last_message": emotion_last_msg,
         "emotional_scores": emotion_scores
         # "emotion_per_text": text_emotion
+        }
+
+@app.post("/paraphrase")
+def convert_text(input: ChatPayload):
+    logger.info(f"/paraphrase called with chatId={input.chatId}, num_messages={len(input.messages)}")
+    last_message = input.messages[-1].content if input.messages else ""
+    logger.debug(f"Last message: {last_message}")
+    converted_text = paraphrase(last_message)
+    logger.info(f"Converted Text for last message: {converted_text}")
+    return {
+        "paraphrased_message": converted_text,
         }
 
 @app.post("/analyse")
