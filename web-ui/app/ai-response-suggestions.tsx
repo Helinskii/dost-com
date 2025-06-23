@@ -144,24 +144,28 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
     }
   }, [username, messages, sentimentData, getDominantEmotion, getSentimentTrend, isPositiveSentiment, isSentimentAnalysisComplete]);
 
-  // Trigger suggestions when sentiment analysis is complete
+  // Only trigger suggestions when sentiment analysis is complete and up-to-date for the latest message
   useEffect(() => {
     if (messages.length <= lastProcessedMessageCount.current) {
       return;
     }
 
-    if (isSentimentAnalysisComplete && !requestInProgress.current) {
+    // Only call /rag if sentiment analysis is complete and the last message is included in sentiment
+    const lastMsg = messages[messages.length - 1];
+    // Find the sentiment for the last message
+    const lastSentiment = lastMsg ? sentimentData.messageSentiments.get(lastMsg.id) : undefined;
+    const lastSentimentCoversLastMsg = !!lastSentiment;
+
+    if (isSentimentAnalysisComplete && lastSentimentCoversLastMsg && !requestInProgress.current) {
       const timeoutId = setTimeout(() => {
         fetchSuggestions();
       }, 500);
-
       return () => clearTimeout(timeoutId);
     }
-    
-    if (!isSentimentAnalysisComplete) {
+    if (!isSentimentAnalysisComplete || !lastSentimentCoversLastMsg) {
       setWaitingForSentiment(true);
     }
-  }, [isSentimentAnalysisComplete, messages.length, fetchSuggestions]);
+  }, [isSentimentAnalysisComplete, messages.length, fetchSuggestions, messages, sentimentData.messageSentiments]);
 
   const handleRefresh = useCallback(() => {
     fetchSuggestions(true);
