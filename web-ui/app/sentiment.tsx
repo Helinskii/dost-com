@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Brain, TrendingUp, BarChart3, Settings, Zap, ZapOff, RefreshCw, Activity } from 'lucide-react';
 import { useSentiment } from '@/hooks/use-sentiment-analysis';
 
@@ -132,11 +132,40 @@ const generateRandomSentiments = () => {
   };
 };
 
+const TABS = [
+  { key: 'breakdown', label: 'Emotional Breakdown' },
+  { key: 'group', label: 'User Sentiment' },
+];
+
+const sentimentOrder = [
+  'sadness',
+  'joy',
+  'love',
+  'anger',
+  'fear',
+  'surprise',
+] as const;
+
+const vibrantBarColors = [
+  'from-blue-400 to-indigo-500',
+  'from-yellow-400 to-orange-500',
+  'from-pink-400 to-rose-500',
+  'from-red-400 to-red-600',
+  'from-purple-400 to-violet-500',
+  'from-gray-400 to-slate-500',
+];
+
 const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isApiEnabled, setIsApiEnabled] = useState(true);
   const [lastAnalyzedCount, setLastAnalyzedCount] = useState(0);
+  const [activeTab, setActiveTab] = useState<'breakdown' | 'group'>('breakdown');
+  const [analyzeResponses, setAnalyzeResponses] = useState<any[]>([]); // Store all analyze API responses
+  const [analyzeLoading, setAnalyzeLoading] = useState(false);
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+  const [selectedUser, setSelectedUser] = useState<string | null>(null);
+  const [showLineChartModal, setShowLineChartModal] = useState(false);
   
   const isAnalyzingRef = useRef(false);
   const randomUpdateInterval = useRef<NodeJS.Timeout | null>(null);
@@ -208,6 +237,38 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages })
     }
   }, [chatId, messages, isApiEnabled, updateSentimentFromAPI, generateRandomSentimentData]);
 
+  // Analyze group/user sentiment via new API
+  const analyzeGroupSentiment = useCallback(async () => {
+    if (!chatId || messages.length === 0) return;
+    setAnalyzeLoading(true);
+    setAnalyzeError(null);
+    try {
+      const response = await fetch('https://lynx-divine-lovely.ngrok-free.app/analyse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chatId,
+          messages: messages.slice(-1), // Only last message
+          timestamp: new Date().toISOString(),
+        }),
+      });
+      if (!response.ok) throw new Error(`Analyze API failed: ${response.status}`);
+      const data = await response.json();
+      setAnalyzeResponses((prev) => [...prev, data]);
+    } catch (err) {
+      setAnalyzeError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setAnalyzeLoading(false);
+    }
+  }, [chatId, messages]);
+
+  // Call analyzeGroupSentiment on message change
+  useEffect(() => {
+    if (!chatId || messages.length === 0) return;
+    analyzeGroupSentiment();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages.length, chatId]);
+
   // Auto-analyze when messages change
   useEffect(() => {
     if (!chatId || messages.length === 0) return;
@@ -228,10 +289,44 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages })
   // Get the dominant emotion for highlighting
   const dominantEmotion = getDominantEmotion();
 
+  // Get latest group sentiment (mu_10 from __GrOuP__)
+  const latestGroup = useMemo(() => {
+    if (analyzeResponses.length === 0) return null;
+    const last = analyzeResponses[analyzeResponses.length - 1];
+    return last['__GrOuP__']?.mu_10 || null;
+  }, [analyzeResponses]);
+
+  // Get all usernames from latest response
+  const userList = useMemo(() => {
+    if (analyzeResponses.length === 0) return [];
+    const last = analyzeResponses[analyzeResponses.length - 1];
+    return Object.keys(last).filter((k) => k !== '__GrOuP__');
+  }, [analyzeResponses]);
+
+  // Get latest user sentiment for selected user
+  const latestUserSentiment = useMemo(() => {
+    if (!selectedUser || analyzeResponses.length === 0) return null;
+    const last = analyzeResponses[analyzeResponses.length - 1];
+    return last[selectedUser]?.mu_10 || null;
+  }, [selectedUser, analyzeResponses]);
+
+  // Get user sentiment history for line chart
+  const userSentimentHistory = useMemo(() => {
+    if (!selectedUser) return [];
+    return analyzeResponses.map((resp) => resp[selectedUser]?.mu_10 || null).filter(Boolean);
+  }, [selectedUser, analyzeResponses]);
+
+  // Get last message sentiment from predict API
+  const lastMessageSentiment = useMemo(() => {
+    if (!sentimentData?.overallSentiment?.emotional_scores) return null;
+    // Map to array in sentimentOrder
+    return sentimentOrder.map((emo) => sentimentData.overallSentiment.emotional_scores[emo as keyof typeof sentimentData.overallSentiment.emotional_scores] || 0);
+  }, [sentimentData]);
+
   // Empty state
   if (messages.length === 0) {
     return (
-      <div className="w-80 h-full bg-gradient-to-br from-gray-50 to-blue-50/30 border-l border-gray-200/60 shadow-lg">
+      <div className="w-[30vw] h-full bg-gradient-to-br from-gray-50 to-blue-50/30 border-l border-gray-200/60 shadow-lg">
         <div className="p-6 flex-1 flex flex-col items-center justify-center text-center">
           <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
             <Brain className="w-10 h-10 text-white" />
@@ -289,99 +384,179 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages })
   }
 
   return (
-    <div className="w-80 h-full bg-gradient-to-br from-gray-50 to-blue-50/30 border-l border-gray-200/60 shadow-lg flex flex-col">
+    <div className="w-[30vw] h-full bg-gradient-to-br from-gray-50 to-blue-50/30 border-l border-gray-200/60 shadow-lg flex flex-col">
       <div className="flex-1 p-6 overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <div className="relative">
-            <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg">
-              <Brain className="w-6 h-6 text-white" />
-            </div>
-            {loading && (
-              <div className="absolute -inset-1 rounded-xl bg-purple-200 animate-ping opacity-30"></div>
-            )}
-            {!isApiEnabled && (
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center">
-                <span className="text-xs text-white font-bold">M</span>
-              </div>
-            )}
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-gray-800">
-              Sentiment Analysis
-            </h2>
-            <p className="text-sm text-gray-600">
-              {loading ? 'Analyzing...' : `${dominantEmotion} · ${getSentimentTrend()}`}
-            </p>
-          </div>
-        </div>
-
-        {/* Emotional Scores */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" />
-              Emotional Breakdown
-            </h3>
+        {/* Tab Switcher */}
+        <div className="flex gap-2 mb-6">
+          {TABS.map((tab) => (
             <button
-              onClick={analyzeSentiments}
-              disabled={loading}
-              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200 disabled:opacity-50"
-              title="Refresh analysis"
+              key={tab.key}
+              className={`px-4 py-2 rounded-xl font-semibold transition-all duration-200 text-sm shadow-sm border
+                ${activeTab === tab.key ? 'bg-purple-600 text-white border-purple-600 scale-105' : 'bg-white text-gray-700 border-gray-200 hover:bg-purple-50'}`}
+              onClick={() => setActiveTab(tab.key as any)}
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              {tab.label}
             </button>
-          </div>
-          
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {Object.entries(sentimentData.overallSentiment.emotional_scores)
-              .sort(([,a], [,b]) => b - a)
-              .map(([emotion, score]) => (
-                <ProgressBar
-                  key={emotion}
-                  value={score}
-                  emotion={emotion}
-                  config={emotionConfig[emotion as keyof typeof emotionConfig]}
-                  isActive={emotion === dominantEmotion}
-                />
-              ))}
-          </div>
+          ))}
         </div>
 
-        {/* Error State */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-            <div className="flex items-start gap-3">
-              <div className="w-5 h-5 text-red-500 mt-0.5">⚠️</div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-red-800">Analysis Failed</p>
-                <p className="text-xs text-red-600 mt-1">{error}</p>
-                <button
-                  onClick={analyzeSentiments}
-                  className="mt-2 text-xs font-medium text-red-700 hover:text-red-800 underline"
-                >
-                  Try again
-                </button>
+        {/* Tab Content */}
+        {activeTab === 'breakdown' ? (
+          <>
+            {/* Group Sentiment Breakdown */}
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-2">
+                <BarChart3 className="w-5 h-5 text-purple-600" />
+                <span className="font-semibold text-purple-700">Group Sentiment (Latest)</span>
+              </div>
+              <div className="space-y-3">
+                {latestGroup ? sentimentOrder.map((emo, i) => (
+                  <ProgressBar
+                    key={emo}
+                    value={latestGroup[i]}
+                    emotion={emo}
+                    config={emotionConfig[emo as keyof typeof emotionConfig]}
+                  />
+                )) : <div className="text-gray-400 text-sm">No group sentiment yet.</div>}
               </div>
             </div>
+            {/* Last Message Sentiment Breakdown */}
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-2">
+                <BarChart3 className="w-5 h-5 text-blue-600" />
+                <span className="font-semibold text-blue-700">Last Message Sentiment</span>
+              </div>
+              <div className="space-y-3">
+                {lastMessageSentiment ? sentimentOrder.map((emo, i) => (
+                  <ProgressBar
+                    key={emo}
+                    value={lastMessageSentiment[i]}
+                    emotion={emo}
+                    config={emotionConfig[emo as keyof typeof emotionConfig]}
+                  />
+                )) : <div className="text-gray-400 text-sm">No sentiment data yet.</div>}
+              </div>
+            </div>
+
+            {/* Error State */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+                <div className="flex items-start gap-3">
+                  <div className="w-5 h-5 text-red-500 mt-0.5">⚠️</div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-red-800">Analysis Failed</p>
+                    <p className="text-xs text-red-600 mt-1">{error}</p>
+                    <button
+                      onClick={analyzeSentiments}
+                      className="mt-2 text-xs font-medium text-red-700 hover:text-red-800 underline"
+                    >
+                      Try again
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Stats */}
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div className="p-3 bg-white rounded-lg border border-gray-200">
+                  <div className="text-2xl font-bold text-purple-600">{messages.length}</div>
+                  <div className="text-xs text-gray-500">Messages</div>
+                </div>
+                <div className="p-3 bg-white rounded-lg border border-gray-200">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {latestGroup ? Math.round(Math.max(...latestGroup) * 100) : 0}%
+                  </div>
+                  <div className="text-xs text-gray-500">Group Confidence</div>
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          // Group/User Sentiment Tab
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 className="w-5 h-5 text-purple-600" />
+              <span className="font-semibold text-purple-700">User Sentiment</span>
+              {analyzeLoading && <RefreshCw className="w-4 h-4 animate-spin text-purple-400 ml-2" />}
+            </div>
+            {/* User Dropdown */}
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Select User</label>
+              <select
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-400"
+                value={selectedUser || ''}
+                onChange={e => setSelectedUser(e.target.value)}
+              >
+                <option value="" disabled>Select a user</option>
+                {userList.map(u => <option key={u} value={u}>{u}</option>)}
+              </select>
+            </div>
+            {/* User Sentiment Bar Chart */}
+            {selectedUser && latestUserSentiment && (
+              <div className="mb-8">
+                <div className="flex items-center gap-2 mb-2">
+                  <BarChart3 className="w-5 h-5 text-pink-600" />
+                  <span className="font-semibold text-pink-700">Latest Sentiment for {selectedUser}</span>
+                </div>
+                <div className="space-y-3">
+                  {sentimentOrder.map((emo, i) => (
+                    <ProgressBar
+                      key={emo}
+                      value={latestUserSentiment[i]}
+                      emotion={emo}
+                      config={emotionConfig[emo as keyof typeof emotionConfig]}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* User Sentiment Line Graph */}
+            {selectedUser && userSentimentHistory.length > 1 && (
+              <div className="mb-8 relative">
+                <div className="flex items-center gap-2 mb-2">
+                  <BarChart3 className="w-5 h-5 text-indigo-600" />
+                  <span className="font-semibold text-indigo-700">Sentiment Trend for {selectedUser}</span>
+                  <button
+                    className="ml-auto px-2 py-1 text-xs rounded bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-semibold border border-indigo-200 transition-all"
+                    onClick={() => setShowLineChartModal(true)}
+                    title="Expand Chart"
+                  >
+                    Expand
+                  </button>
+                </div>
+                <div className="w-full">
+                  <UserSentimentLineChart history={userSentimentHistory} width={340} height={340} />
+                </div>
+              </div>
+            )}
+            {/* Modal for fullscreen line chart */}
+            {showLineChartModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+                <div className="relative bg-white rounded-2xl shadow-2xl p-8 max-w-5xl w-full mx-4 flex flex-col items-center h-[85vh] max-h-[95vh]">
+                  <button
+                    className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 bg-gray-100 rounded-full p-2"
+                    onClick={() => setShowLineChartModal(false)}
+                    title="Close"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                  <h2 className="text-xl font-bold mb-4 text-indigo-700">Sentiment Trend for {selectedUser}</h2>
+                  <div className="w-full flex justify-center flex-1 items-center">
+                    <UserSentimentLineChart history={userSentimentHistory} width={900} height={500} />
+                  </div>
+                </div>
+              </div>
+            )}
+            {analyzeError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700">
+                {analyzeError}
+              </div>
+            )}
+            {userList.length === 0 && <div className="text-center text-gray-500 py-8">No user sentiment data yet.</div>}
           </div>
         )}
-
-        {/* Stats */}
-        <div className="mt-6 pt-4 border-t border-gray-200">
-          <div className="grid grid-cols-2 gap-4 text-center">
-            <div className="p-3 bg-white rounded-lg border border-gray-200">
-              <div className="text-2xl font-bold text-purple-600">{messages.length}</div>
-              <div className="text-xs text-gray-500">Messages</div>
-            </div>
-            <div className="p-3 bg-white rounded-lg border border-gray-200">
-              <div className="text-2xl font-bold text-blue-600">
-                {Math.round((sentimentData.overallSentiment.emotional_scores[dominantEmotion] || 0) * 100)}%
-              </div>
-              <div className="text-xs text-gray-500">Confidence</div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Bottom Controls */}
@@ -439,6 +614,87 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages })
             </>
           )}
         </button>
+      </div>
+    </div>
+  );
+};
+
+// UserSentimentLineChart: visually appealing multi-emotion line chart
+const UserSentimentLineChart: React.FC<{ history: number[][]; width?: number; height?: number }> = ({ history, width = 240, height = 120 }) => {
+  if (!history.length) return null;
+  const pad = 28;
+  const n = history.length;
+  // Tailwind color classes for SVG (fallback to hex if needed)
+  const emotionColors = [
+    '#3b82f6', // sadness - blue-500
+    '#f59e42', // joy - yellow-400
+    '#ec4899', // love - pink-500
+    '#ef4444', // anger - red-500
+    '#a21caf', // fear - purple-800
+    '#64748b', // surprise - slate-500
+  ];
+  // For each emotion, build a smooth line (SVG path)
+  const getPath = (emoIdx: number) => {
+    const points = history.map((h, i) => {
+      const x = pad + (width - 2 * pad) * (i / (n - 1 || 1));
+      const y = height - pad - (height - 2 * pad) * (h[emoIdx] || 0);
+      return [x, y];
+    });
+    // Smooth curve (Catmull-Rom to Bezier)
+    let d = '';
+    for (let i = 0; i < points.length; i++) {
+      const [x, y] = points[i];
+      if (i === 0) {
+        d += `M${x},${y}`;
+      } else {
+        const [x0, y0] = points[i - 1];
+        const xc = (x0 + x) / 2;
+        d += ` Q${xc},${y0} ${x},${y}`;
+      }
+    }
+    return d;
+  };
+  return (
+    <div className="w-full flex flex-col items-center">
+      <svg width={width} height={height} className="bg-white rounded-lg border border-gray-200 w-full shadow-sm">
+        {/* Axes */}
+        <line x1={pad} y1={height - pad} x2={width - pad} y2={height - pad} stroke="#e5e7eb" strokeWidth={1.5} />
+        <line x1={pad} y1={pad} x2={pad} y2={height - pad} stroke="#e5e7eb" strokeWidth={1.5} />
+        {/* Lines for each emotion */}
+        {sentimentOrder.map((emo, emoIdx) => (
+          <path
+            key={emo}
+            d={getPath(emoIdx)}
+            fill="none"
+            stroke={emotionColors[emoIdx]}
+            strokeWidth={2.5}
+            style={{ filter: 'drop-shadow(0 1px 2px #0001)' }}
+            opacity={0.95}
+          />
+        ))}
+        {/* Dots for each emotion */}
+        {sentimentOrder.map((emo, emoIdx) => history.map((h, i) => {
+          const x = pad + (width - 2 * pad) * (i / (n - 1 || 1));
+          const y = height - pad - (height - 2 * pad) * (h[emoIdx] || 0);
+          return <circle key={emo + i} cx={x} cy={y} r={width > 400 ? 7 : 3.2} fill={emotionColors[emoIdx]} stroke="#fff" strokeWidth={width > 400 ? 2 : 1.2} />;
+        }))}
+        {/* Y-axis labels */}
+        {[0, 0.5, 1].map((v) => (
+          <text key={v} x={pad - 8} y={height - pad - (height - 2 * pad) * v + 4} fontSize={width > 400 ? 18 : 10} fill="#888" textAnchor="end">{Math.round(v * 100)}%</text>
+        ))}
+        {/* X-axis labels (show only for first, last, and middle) */}
+        {[0, Math.floor((n - 1) / 2), n - 1].map((i) => (
+          <text key={i} x={pad + (width - 2 * pad) * (i / (n - 1 || 1))} y={height - pad + (width > 400 ? 28 : 16)} fontSize={width > 400 ? 18 : 10} fill="#888" textAnchor="middle">{i + 1}</text>
+        ))}
+      </svg>
+      {/* Legend */}
+      <div className="flex flex-wrap justify-center gap-2 mt-2">
+        {sentimentOrder.map((emo, i) => (
+          <div key={emo} className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium" style={{ background: `${emotionColors[i]}22` }}>
+            <span style={{ color: emotionColors[i], fontSize: width > 400 ? 28 : 16 }}>{emotionConfig[emo as keyof typeof emotionConfig].icon}</span>
+            <span className="text-gray-700">{emotionConfig[emo as keyof typeof emotionConfig].label}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
