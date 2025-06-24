@@ -67,9 +67,7 @@ def get_llm_rag_response(recent_entry, context_history):
     ############Uncomment this for OpenAI LLMs############
     openai.api_key = os.getenv("OPENAI_API_KEY")
     MODEL_NAME = "gpt-4o-mini"
-
-    prompt = build_rag_prompt(recent_entry, context_history)
-    
+    prompt = build_rag_prompt(recent_entry, context_history)   
     response = openai.chat.completions.create(
         model=MODEL_NAME,
         messages=[
@@ -81,14 +79,35 @@ def get_llm_rag_response(recent_entry, context_history):
     )
     content = response.choices[0].message.content
     raw_text = content.strip() if content is not None else ""
-
     suggestions = [
         line.strip().replace('\n', ' ')
         for line in raw_text.split('\n\n')
         if line.strip()
     ]
+    return suggestions[:3]
+    
 
-    return suggestions[:3]  # Return only the first 3 suggestions
+    # #########Uncomment this for Gemini and Comment other#############
+    # import google.generativeai as genai
+    # genai.api_key = os.getenv("GEMINI_API_KEY")
+    # MODEL_NAME = "gemini-1.5-flash"
+    # prompt = build_rag_prompt(recent_entry, context_history)
+    # response = genai.generate_content(
+    #     model=MODEL_NAME,
+    #     prompt=prompt,
+    #     temperature=0.7,
+    #     max_output_tokens=250,
+    #     top_p=0.95,
+    #     top_k=40
+    # )
+    # raw_text = response.candidates[0].content.strip() if response.candidates else ""
+    # suggestions = [
+    #     line.strip().replace('\n', ' ')
+    #     for line in raw_text.split('\n\n')
+    #     if line.strip()
+    # ]
+    # return suggestions[:3] 
+
 
 
     # # #########Uncomment this for MISTRAL LLM and Comment other#############
