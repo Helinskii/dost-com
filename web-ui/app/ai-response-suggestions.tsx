@@ -84,11 +84,6 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
       return;
     }
 
-    if (!forceRefresh && !isSentimentAnalysisComplete) {
-      setWaitingForSentiment(true);
-      return;
-    }
-
     // Start the request
     requestInProgress.current = true;
     setLoading(true);
@@ -96,14 +91,6 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
     setWaitingForSentiment(false);
 
     try {
-      const sentimentPayload = {
-        overallSentiment: sentimentData.overallSentiment,
-        dominantEmotion: getDominantEmotion(),
-        trend: getSentimentTrend(),
-        isPositive: isPositiveSentiment(),
-        messageSentiments: Array.from(sentimentData.messageSentiments.entries()).slice(-5)
-      };
-
       const response = await fetch('https://lynx-divine-lovely.ngrok-free.app/rag', {
         method: 'POST',
         headers: {
@@ -113,7 +100,6 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
           username,
           chatId: roomName,
           messages: messages.slice(-1),
-          sentiment: sentimentPayload,
           timestamp: new Date().toISOString()
         })
       });
@@ -144,28 +130,18 @@ const AIResponseSuggestions: React.FC<AIResponseSuggestionsProps> = ({
     }
   }, [username, messages, sentimentData, getDominantEmotion, getSentimentTrend, isPositiveSentiment, isSentimentAnalysisComplete]);
 
-  // Only trigger suggestions when sentiment analysis is complete and up-to-date for the latest message
+  // Only trigger suggestions when a new message arrives
   useEffect(() => {
     if (messages.length <= lastProcessedMessageCount.current) {
       return;
     }
-
-    // Only call /rag if sentiment analysis is complete and the last message is included in sentiment
-    const lastMsg = messages[messages.length - 1];
-    // Find the sentiment for the last message
-    const lastSentiment = lastMsg ? sentimentData.messageSentiments.get(lastMsg.id) : undefined;
-    const lastSentimentCoversLastMsg = !!lastSentiment;
-
-    if (isSentimentAnalysisComplete && lastSentimentCoversLastMsg && !requestInProgress.current) {
+    if (!requestInProgress.current) {
       const timeoutId = setTimeout(() => {
         fetchSuggestions();
       }, 500);
       return () => clearTimeout(timeoutId);
     }
-    if (!isSentimentAnalysisComplete || !lastSentimentCoversLastMsg) {
-      setWaitingForSentiment(true);
-    }
-  }, [isSentimentAnalysisComplete, messages.length, fetchSuggestions, messages, sentimentData.messageSentiments]);
+  }, [messages.length, fetchSuggestions, messages]);
 
   const handleRefresh = useCallback(() => {
     fetchSuggestions(true);

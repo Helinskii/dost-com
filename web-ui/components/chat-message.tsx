@@ -18,12 +18,14 @@ const SentimentBadge = ({
   emotion = 'unknown', 
   score = 0.5, 
   size = 'sm',
-  type = 'message' // 'message' or 'user'
+  type = 'message',
+  tooltipSide = 'right' // 'left' or 'right'
 }: {
   emotion: EmotionType;
   score: number;
   size?: 'xs' | 'sm' | 'md';
   type?: 'message' | 'user';
+  tooltipSide?: 'left' | 'right';
 }) => {
   const [isHovered, setIsHovered] = useState(false)
 
@@ -89,7 +91,7 @@ const SentimentBadge = ({
   const IconComponent = config.icon
 
   return (
-    <div className="relative inline-block">
+    <div className="relative inline-block overflow-visible z-50">
       <div
         className={`
           ${sizes.container}
@@ -105,12 +107,12 @@ const SentimentBadge = ({
         `}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
+        style={{ zIndex: 100 }}
       >
         <IconComponent 
           className={`${sizes.icon} text-white drop-shadow-sm`}
           strokeWidth={2.5}
         />
-        
         {/* Special effect for love emotion */}
         {emotion === 'love' && (
           <div className="absolute inset-0 rounded-full bg-pink-400 animate-ping opacity-20"></div>
@@ -119,18 +121,18 @@ const SentimentBadge = ({
 
       {/* Tooltip */}
       {isHovered && (
-        <div className={`
-          absolute ${type === 'message' ? 'bottom-full' : 'top-full'} left-1/2 
-          transform -translate-x-1/2 ${type === 'message' ? 'mb-2' : 'mt-2'}
+        <div className={
+          `absolute ${type === 'message' ? 'bottom-full' : 'top-full'} ${tooltipSide === 'left' ? 'left-0' : 'right-0'}
+          ${type === 'message' ? 'mb-2' : 'mt-2'}
           ${config.bgColor} ${config.textColor}
           ${sizes.tooltip}
           rounded-lg
           shadow-lg
-          whitespace-nowrap
-          z-50
+          whitespace-pre-line min-w-fit max-w-xs break-words
+          z-[9999]
           border border-gray-200
-          animate-in fade-in-0 zoom-in-95 duration-200
-        `}>
+          animate-in fade-in-0 zoom-in-95 duration-200`
+        }>
           <div className="flex items-center gap-2">
             <span>{config.emoji}</span>
             <span className="font-medium">
@@ -140,11 +142,9 @@ const SentimentBadge = ({
               ({Math.round(score * 100)}%)
             </span>
           </div>
-          
           {/* Tooltip arrow */}
           <div className={`
-            absolute ${type === 'message' ? 'top-full' : 'bottom-full'} left-1/2 
-            transform -translate-x-1/2
+            absolute ${type === 'message' ? 'top-full' : 'bottom-full'} ${tooltipSide === 'left' ? 'left-2' : 'right-2'}
             w-0 h-0
             border-l-4 border-r-4 ${type === 'message' ? 'border-t-4' : 'border-b-4'}
             border-l-transparent border-r-transparent
@@ -165,7 +165,6 @@ export const ChatMessageItem = ({
   showHeader
 }: ChatMessageItemProps) => {
   const { getMessageSentiment, getUserSentiment } = useSentiment();
-  
   // Get sentiment data from the hook
   const messageSentiment = getMessageSentiment(message.id);
   const userSentiment = getUserSentiment(message.user.name);
@@ -176,34 +175,35 @@ export const ChatMessageItem = ({
         className={cn('max-w-[75%] w-fit flex flex-col gap-2', {
           'items-end': isOwnMessage,
         })}
+        style={{ overflow: 'visible' }}
       >
         {showHeader && (
           <div
             className={cn('flex items-center gap-2 text-xs px-3', {
               'justify-end flex-row-reverse': isOwnMessage,
             })}
+            style={{ overflow: 'visible' }}
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" style={{ overflow: 'visible' }}>
               {/* User Avatar with Sentiment */}
-              <div className="relative">
+              <div className="relative" style={{ overflow: 'visible' }}>
                 <div className="w-6 h-6 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-semibold">
                   {message.user.name.charAt(0).toUpperCase()}
                 </div>
                 {userSentiment && (
-                  <div className="absolute -top-1 -right-1">
+                  <div className="absolute -top-2 -right-2 z-50">
                     <SentimentBadge 
                       emotion={userSentiment.averageEmotion}
                       score={userSentiment.averageScore}
                       size="xs"
                       type="user"
+                      tooltipSide="right"
                     />
                   </div>
                 )}
               </div>
-              
               <span className="font-medium text-gray-800">{message.user.name}</span>
             </div>
-            
             <span className="text-foreground/50 text-xs">
               {new Date(message.createdAt).toLocaleTimeString('en-US', {
                 hour: '2-digit',
@@ -213,16 +213,16 @@ export const ChatMessageItem = ({
             </span>
           </div>
         )}
-        
-        <div className="relative">
+        <div className="relative" style={{ overflow: 'visible' }}>
           <div
             className={cn(
-              'py-3 px-4 rounded-2xl text-sm w-fit relative overflow-hidden',
+              'py-3 px-4 rounded-2xl text-sm w-fit relative overflow-visible',
               'backdrop-blur-sm border shadow-sm',
               isOwnMessage 
                 ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white border-blue-400/20' 
                 : 'bg-white/80 text-gray-800 border-gray-200/50'
             )}
+            style={{ overflow: 'visible' }}
           >
             {/* Subtle background pattern for own messages */}
             {isOwnMessage && (
@@ -230,19 +230,18 @@ export const ChatMessageItem = ({
                 <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
               </div>
             )}
-            
             <div className="relative z-10">
               {message.content}
             </div>
-            
             {/* Message Sentiment Badge */}
             {messageSentiment && (
-              <div className={`absolute -top-1 ${isOwnMessage ? '-left-1' : '-right-1'}`}>
+              <div className={`absolute -top-2 ${isOwnMessage ? '-left-2' : '-right-2'} z-50`} style={{ pointerEvents: 'auto' }}>
                 <SentimentBadge 
                   emotion={messageSentiment.emotion}
                   score={messageSentiment.confidence}
                   size="xs"
                   type="message"
+                  tooltipSide={!isOwnMessage ? 'left' : 'right'}
                 />
               </div>
             )}
