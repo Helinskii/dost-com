@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from transformers import MobileBertTokenizerFast, MobileBertForSequenceClassification, AutoModelForSequenceClassification, DistilBertForSequenceClassification
 from collections import Counter
+from sentiment_infer import predict_emotion
 
 model_path = "mobilebert-uncased_full_128_stage2/checkpoint-264"
 tokenizer = MobileBertTokenizerFast.from_pretrained("google/mobilebert-uncased")
@@ -50,11 +51,12 @@ class SentimentPredictionEngine(nn.Module):
                     inputs = {k: v.to(device) for k, v in inputs.items()}
                     with torch.no_grad():
                         outputs = self.model.mobilebert(**inputs)
-                        cls_embedding = outputs.last_hidden_state[:, 0, :].squeeze(0).to(device)
+                        cls_embedding = outputs.last_hidden_state[:, 0, :].squeeze(0)
+                        cls_embedding = cls_embedding.to(device)
                     seq_embeddings.append(cls_embedding)
-            all_embeddings.append(torch.stack(seq_embeddings))
-        
-        embeddings = torch.stack(all_embeddings)  # (batch, max_len, embed_dim)
+            seq_embeddings = torch.stack(seq_embeddings).to(device)
+            all_embeddings.append(seq_embeddings)
+        embeddings = torch.stack(all_embeddings).to(device)  # (batch, max_len, embed_dim)
         
         # Packing here so that all messages in a sequence are of the same length
         packed = nn.utils.rnn.pack_padded_sequence(embeddings, lengths.cpu(), batch_first=True, enforce_sorted=False)
@@ -70,13 +72,14 @@ class SentimentPredictionEngine(nn.Module):
         last_msg = msg_sequences[-1][-1]
         # DEBUG
         # print(last_msg)
-        sentiment_input = tokenizer(last_msg, return_tensors="pt", truncation=True, padding=True, max_length=128)
-        with torch.no_grad():
-            sentiment_outputs = self.model(**sentiment_input)
-            sentiment_logits = sentiment_outputs.logits
-            prediction = torch.argmax(sentiment_logits, dim=1).item()
-
-        return logits, labels[int(prediction)]
+        # sentiment_input = tokenizer(last_msg, return_tensors="pt", truncation=True, padding=True, max_length=128)
+        # with torch.no_grad():
+        #     sentiment_outputs = self.model(**sentiment_input)
+        #     sentiment_logits = sentiment_outputs.logits
+        #     prediction = torch.argmax(sentiment_logits, dim=1).item()
+        emo_last_msg = predict_emotion(last_msg)
+ 
+        return logits, emo_last_msg
 
     def debug_prints(self):
         print(self.embed_dim)
@@ -89,12 +92,10 @@ if __name__ == "__main__":
     
     # dummy_message_seq = ["Hey!", "How's it going?", "Great!"]
     dummy_message_seq = [
-      "This came out of nowhere",
-      "Hmm",
-      "How so?",
-      "That sounds unexpected",
-      "What happened?",
-      "I'm absolutely amazed!"
+        "I failed my exam.",
+        "I'm really upset.",
+        "But it's okay, I'll try again.",
+        "Whatever happens, happens."
     ]
     with torch.no_grad():
         logits, emo_last_msg = model([dummy_message_seq], torch.tensor([len(dummy_message_seq)]))

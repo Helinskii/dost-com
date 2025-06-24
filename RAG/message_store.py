@@ -63,17 +63,18 @@ def message_store(message):
         metadatas=[metadata]
     )
 
-# dummy_message = {
-#     "id": "353fc391-3afe-49a4-a88a-64a32aed0c85",
-#     "content": "What's going on?",
-#     "user": {
-#         "name": "test"
-#     },
-#     "sentiment": "joy",
-#     "createdAt": "2025-06-07T11:29:07.095Z"
-# }
-
-# message_store(dummy_message)
+if __name__ == "__main__":
+    dummy_message = {
+        "id": "353fc391-3afe-49a4-a88a-64a32aed0c85",
+        "content": "What's going on?",
+        "user": {
+            "name": "test"
+        },
+        "sentiment": "joy",
+        "createdAt": "2025-06-07T11:29:07.095Z"
+    }
+    
+    message_store(dummy_message)
 
 # Store example conversation in JSON format in DB to check RAG
 # json_path = "chat_jsonformat.json"
