@@ -1,0 +1,76 @@
+<rail version="0.1">
+  <input>
+    <param name="recent_entry">
+      <object>
+        <param name="sender">
+          <string minLength="1"/>
+        </param>
+        <param name="message">
+          <string minLength="1" maxLength="500">
+            <regex
+              name="NoPII"
+              description="No emails, phone numbers, or SSNs."
+              pattern="^(?!.*(?:\b\d{3}-\d{2}-\d{4}\b|\b\d{3}\.\d{2}\.\d{4}\b|\b\d{9}\b|\b1-\d{3}-\d{3}-\d{4}\b|\b\(\d{3}\)\s*\d{3}-\d{4}\b|[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4})).*$"
+            />
+            <regex
+              name="NoMaliciousContent"
+              description="Avoid illegal or unethical phrases."
+              pattern="^(?!.*(I will kill|going to kill|want to kill myself|commit suicide|how to hack|rape someone|sell drugs|terrorist attack)).*$"
+            />
+            <regex
+              name="NoSecrets"
+              description="Avoid security-sensitive terms."
+              pattern="^(?!.*\\b(password|api[_-]?key|bearer token|secret|auth token|access token)\\b).*$"
+            />
+          </string>
+        </param>
+        <param name="sentiment">
+          <enum>
+            <option>sadness</option>
+            <option>joy</option>
+            <option>love</option>
+            <option>anger</option>
+            <option>fear</option>
+            <option>surprise</option>
+          </enum>
+        </param>
+      </object>
+    </param>
+    <param name="context_history">
+      <list>
+        <object>
+          <param name="sender">
+            <string/>
+          </param>
+          <param name="message">
+            <string/>
+          </param>
+        </object>
+      </list>
+    </param>
+  </input>
+  <output>
+    <list name="suggested_replies" minItems="1" maxItems="3">
+      <string maxLength="150">
+        <regex
+          name="NoMaliciousContent"
+          description="Avoid illegal or unethical phrases."
+          pattern="^(?!.*(you should kill|commit suicide|here's how to hack|try drugs|become a terrorist)).*$"
+        />
+      </string>
+    </list>
+  </output>
+  <prompt>
+    <instructions>
+      You are an emotionally intelligent assistant in a group chat support system which reply like a human.
+      Your job is to generate kind, supportive, emotionally aware replies based on the recent message and context.
+
+      Adhere strictly to the following:
+      - Do NOT include real names or usernames in the reply.
+      - Avoid sharing any personal information or secrets.
+      - Comply with legal, ethical, and secure communication guidelines.
+      - Responses must be emotionally constructive and helpful.
+      - Each suggestion should be short (under 150 characters), non-judgmental, and inclusive.
+    </instructions>
+  </prompt>
+</rail>
