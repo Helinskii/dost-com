@@ -13,19 +13,19 @@ def build_rag_prompt(recent_entry, context_history=None):
     username = recent_entry.get('Sender', {})
     message = recent_entry.get('Message', {})
     emotion_detected = recent_entry.get("Sentiment", {})
-    # sorted_sentiments = sorted(sentiment_scores.items(), key=lambda x: x[1], reverse=True)
-    # sentiment_text = ", ".join([f"{k}: {round(v * 100)}%" for k, v in sorted_sentiments]) or "No dominant emotion detected"
+    # sorted_sentiment = sorted(sentiment_scores.items(), key=lambda x: x[1], reverse=True)
+    # sentiment_text = ", ".join([f"{k}: {round(v * 100)}%" for k, v in sorted_sentiment]) or "No dominant emotion detected"
 
     # Filter context to include the user's own messages
     own_messages = [
-        f"{entry['sender']}: {entry['message']} (emotion: {entry['sentiment']})"
+        f"{entry['sender']}: {entry['message']}"
         for entry in context_history if entry.get('sender') == username
     ]
     own_context = f"### {username}'s Previous Messages:\n" + "\n".join(own_messages) if own_messages else ""
 
     # Filter context to exclude the user's own messages
     others_messages = [
-        f"{entry['sender']}: {entry['message']} (emotion: {entry['sentiment']})"
+        f"{entry['sender']}: {entry['message']}"
         for entry in context_history if entry.get('sender') != username
     ]
     others_context = f"### Messages from Other Users:\n" + "\n".join(others_messages) if others_messages else ""
@@ -91,6 +91,29 @@ def get_llm_rag_response(recent_entry, context_history):
     return suggestions[:3]  # Return only the first 3 suggestions
 
 
+    # # #########Uncomment this for MISTRAL LLM and Comment other#############
+    # OLLAMA_URL = "http://localhost:11434/api/generate"
+    # MODEL_NAME = "mistral"  # Use the Mistral model with Ollama
+    # prompt = build_rag_prompt(recent_entry, context_history)
+    # response = requests.post(OLLAMA_URL, json={
+    #     "model": MODEL_NAME,
+    #     "prompt": prompt,
+    #     "stream": False
+    #     })
+    # if response.status_code == 200:
+    #     raw_text = response.json()['response'].strip()
+    #     # Split and clean suggestions
+    #     suggestions = [
+    #         line.strip().lstrip('0123456789. ').replace('"', '')
+    #         for line in raw_text.split('\n')
+    #         if line.strip()
+    #     ]
+    #     return suggestions[:3]  # Return only the first 3 suggestions
+    # else:
+    #     return f"Error: {response.status_code} - {response.text}"
+
+
+
 
     # #########Uncomment this for HuggingFace LLM and Comment other##########
     # MODEL_NAME = "distilgpt2"
@@ -109,36 +132,26 @@ def get_llm_rag_response(recent_entry, context_history):
     #     top_p=0.95,
     #     pad_token_id=tokenizer.eos_token_id
     # )
-
     # decoded = tokenizer.decode(output[0], skip_special_tokens=True)
-
     # # Remove prompt from beginning of decoded output
     # generated = decoded[len(prompt):].strip()
-
     # # Split suggestions by line or double newline
     # suggestions = [line.strip() for line in generated.split('\n') if line.strip()]
-
     # return suggestions
-
-
 
 
     # #########Uncomment this for Ollama LLM and Comment other#############
     # OLLAMA_URL = "http://localhost:11434/api/generate"
     # MODEL_NAME = "tinyllama"
-
     # prompt = build_rag_prompt(recent_entry, context_history)
-
     # response = requests.post(OLLAMA_URL, json={
     #     "model": MODEL_NAME,
     #     "prompt": prompt,
     #     "stream": False
     # })
-
     # if response.status_code == 200:
     #     raw_text = response.json()['response'].strip()
-
-    #     Split and clean suggestions
+    #     # Split and clean suggestions
     #     suggestions = [
     #       line.strip().replace('\n', ' ')
     #       for line in raw_text.split('\n\n')
