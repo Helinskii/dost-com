@@ -266,7 +266,7 @@ function ChatPage() {
 
         <div
           className={`transition-all duration-300 ease-in-out ${
-            showSidebar ? 'w-80' : 'w-0'
+            showSidebar ? 'w-[30vw]' : 'w-0'
           } overflow-hidden`}
         >
           {showSidebar && (

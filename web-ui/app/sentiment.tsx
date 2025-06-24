@@ -165,6 +165,7 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages })
   const [analyzeLoading, setAnalyzeLoading] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
+  const [showLineChartModal, setShowLineChartModal] = useState(false);
   
   const isAnalyzingRef = useRef(false);
   const randomUpdateInterval = useRef<NodeJS.Timeout | null>(null);
@@ -325,7 +326,7 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages })
   // Empty state
   if (messages.length === 0) {
     return (
-      <div className="w-80 h-full bg-gradient-to-br from-gray-50 to-blue-50/30 border-l border-gray-200/60 shadow-lg">
+      <div className="w-[30vw] h-full bg-gradient-to-br from-gray-50 to-blue-50/30 border-l border-gray-200/60 shadow-lg">
         <div className="p-6 flex-1 flex flex-col items-center justify-center text-center">
           <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
             <Brain className="w-10 h-10 text-white" />
@@ -383,7 +384,7 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages })
   }
 
   return (
-    <div className="w-80 h-full bg-gradient-to-br from-gray-50 to-blue-50/30 border-l border-gray-200/60 shadow-lg flex flex-col">
+    <div className="w-[30vw] h-full bg-gradient-to-br from-gray-50 to-blue-50/30 border-l border-gray-200/60 shadow-lg flex flex-col">
       <div className="flex-1 p-6 overflow-y-auto">
         {/* Tab Switcher */}
         <div className="flex gap-2 mb-6">
@@ -513,12 +514,39 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages })
             )}
             {/* User Sentiment Line Graph */}
             {selectedUser && userSentimentHistory.length > 1 && (
-              <div className="mb-8">
+              <div className="mb-8 relative">
                 <div className="flex items-center gap-2 mb-2">
                   <BarChart3 className="w-5 h-5 text-indigo-600" />
                   <span className="font-semibold text-indigo-700">Sentiment Trend for {selectedUser}</span>
+                  <button
+                    className="ml-auto px-2 py-1 text-xs rounded bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-semibold border border-indigo-200 transition-all"
+                    onClick={() => setShowLineChartModal(true)}
+                    title="Expand Chart"
+                  >
+                    Expand
+                  </button>
                 </div>
-                <UserSentimentLineChart history={userSentimentHistory} />
+                <div className="w-full">
+                  <UserSentimentLineChart history={userSentimentHistory} width={340} height={340} />
+                </div>
+              </div>
+            )}
+            {/* Modal for fullscreen line chart */}
+            {showLineChartModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+                <div className="relative bg-white rounded-2xl shadow-2xl p-8 max-w-5xl w-full mx-4 flex flex-col items-center h-[85vh] max-h-[95vh]">
+                  <button
+                    className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 bg-gray-100 rounded-full p-2"
+                    onClick={() => setShowLineChartModal(false)}
+                    title="Close"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                  <h2 className="text-xl font-bold mb-4 text-indigo-700">Sentiment Trend for {selectedUser}</h2>
+                  <div className="w-full flex justify-center flex-1 items-center">
+                    <UserSentimentLineChart history={userSentimentHistory} width={900} height={500} />
+                  </div>
+                </div>
               </div>
             )}
             {analyzeError && (
@@ -591,53 +619,84 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages })
   );
 };
 
-// UserSentimentLineChart: simple SVG line chart for each emotion
-const UserSentimentLineChart: React.FC<{ history: number[][] }> = ({ history }) => {
-  // history: array of [sadness, joy, love, anger, fear, surprise] arrays
+// UserSentimentLineChart: visually appealing multi-emotion line chart
+const UserSentimentLineChart: React.FC<{ history: number[][]; width?: number; height?: number }> = ({ history, width = 240, height = 120 }) => {
   if (!history.length) return null;
-  const width = 220;
-  const height = 80;
-  const pad = 18;
+  const pad = 28;
   const n = history.length;
-  // For each emotion, build a line
-  const lines = sentimentOrder.map((emo, emoIdx) => {
+  // Tailwind color classes for SVG (fallback to hex if needed)
+  const emotionColors = [
+    '#3b82f6', // sadness - blue-500
+    '#f59e42', // joy - yellow-400
+    '#ec4899', // love - pink-500
+    '#ef4444', // anger - red-500
+    '#a21caf', // fear - purple-800
+    '#64748b', // surprise - slate-500
+  ];
+  // For each emotion, build a smooth line (SVG path)
+  const getPath = (emoIdx: number) => {
     const points = history.map((h, i) => {
       const x = pad + (width - 2 * pad) * (i / (n - 1 || 1));
       const y = height - pad - (height - 2 * pad) * (h[emoIdx] || 0);
-      return `${x},${y}`;
-    }).join(' ');
-    return { emo, color: vibrantBarColors[emoIdx].split(' ')[0].replace('from-', ''), points };
-  });
+      return [x, y];
+    });
+    // Smooth curve (Catmull-Rom to Bezier)
+    let d = '';
+    for (let i = 0; i < points.length; i++) {
+      const [x, y] = points[i];
+      if (i === 0) {
+        d += `M${x},${y}`;
+      } else {
+        const [x0, y0] = points[i - 1];
+        const xc = (x0 + x) / 2;
+        d += ` Q${xc},${y0} ${x},${y}`;
+      }
+    }
+    return d;
+  };
   return (
-    <svg width={width} height={height} className="bg-white rounded-lg border border-gray-200 w-full">
-      {/* Axes */}
-      <line x1={pad} y1={height - pad} x2={width - pad} y2={height - pad} stroke="#ddd" strokeWidth={1} />
-      <line x1={pad} y1={pad} x2={pad} y2={height - pad} stroke="#ddd" strokeWidth={1} />
-      {/* Lines */}
-      {lines.map((l, i) => (
-        <polyline
-          key={l.emo}
-          fill="none"
-          stroke={`var(--tw-${l.color})`}
-          strokeWidth={2}
-          points={l.points}
-          style={{ filter: 'drop-shadow(0 1px 2px #0001)' }}
-        />
-      ))}
-      {/* Dots */}
-      {lines.map((l, emoIdx) => history.map((h, i) => {
-        const x = pad + (width - 2 * pad) * (i / (n - 1 || 1));
-        const y = height - pad - (height - 2 * pad) * (h[emoIdx] || 0);
-        return <circle key={i} cx={x} cy={y} r={2.5} fill={`var(--tw-${l.color})`} />;
-      }))}
+    <div className="w-full flex flex-col items-center">
+      <svg width={width} height={height} className="bg-white rounded-lg border border-gray-200 w-full shadow-sm">
+        {/* Axes */}
+        <line x1={pad} y1={height - pad} x2={width - pad} y2={height - pad} stroke="#e5e7eb" strokeWidth={1.5} />
+        <line x1={pad} y1={pad} x2={pad} y2={height - pad} stroke="#e5e7eb" strokeWidth={1.5} />
+        {/* Lines for each emotion */}
+        {sentimentOrder.map((emo, emoIdx) => (
+          <path
+            key={emo}
+            d={getPath(emoIdx)}
+            fill="none"
+            stroke={emotionColors[emoIdx]}
+            strokeWidth={2.5}
+            style={{ filter: 'drop-shadow(0 1px 2px #0001)' }}
+            opacity={0.95}
+          />
+        ))}
+        {/* Dots for each emotion */}
+        {sentimentOrder.map((emo, emoIdx) => history.map((h, i) => {
+          const x = pad + (width - 2 * pad) * (i / (n - 1 || 1));
+          const y = height - pad - (height - 2 * pad) * (h[emoIdx] || 0);
+          return <circle key={emo + i} cx={x} cy={y} r={width > 400 ? 7 : 3.2} fill={emotionColors[emoIdx]} stroke="#fff" strokeWidth={width > 400 ? 2 : 1.2} />;
+        }))}
+        {/* Y-axis labels */}
+        {[0, 0.5, 1].map((v) => (
+          <text key={v} x={pad - 8} y={height - pad - (height - 2 * pad) * v + 4} fontSize={width > 400 ? 18 : 10} fill="#888" textAnchor="end">{Math.round(v * 100)}%</text>
+        ))}
+        {/* X-axis labels (show only for first, last, and middle) */}
+        {[0, Math.floor((n - 1) / 2), n - 1].map((i) => (
+          <text key={i} x={pad + (width - 2 * pad) * (i / (n - 1 || 1))} y={height - pad + (width > 400 ? 28 : 16)} fontSize={width > 400 ? 18 : 10} fill="#888" textAnchor="middle">{i + 1}</text>
+        ))}
+      </svg>
       {/* Legend */}
-      {lines.map((l, i) => (
-        <g key={l.emo}>
-          <rect x={pad + i * 32} y={4} width={10} height={10} fill={`var(--tw-${l.color})`} rx={2} />
-          <text x={pad + i * 32 + 14} y={13} fontSize={10} fill="#444">{emotionConfig[l.emo as keyof typeof emotionConfig].icon}</text>
-        </g>
-      ))}
-    </svg>
+      <div className="flex flex-wrap justify-center gap-2 mt-2">
+        {sentimentOrder.map((emo, i) => (
+          <div key={emo} className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium" style={{ background: `${emotionColors[i]}22` }}>
+            <span style={{ color: emotionColors[i], fontSize: width > 400 ? 28 : 16 }}>{emotionConfig[emo as keyof typeof emotionConfig].icon}</span>
+            <span className="text-gray-700">{emotionConfig[emo as keyof typeof emotionConfig].label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 };
 
