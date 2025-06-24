@@ -92,14 +92,15 @@ if __name__ == "__main__":
     
     # dummy_message_seq = ["Hey!", "How's it going?", "Great!"]
     dummy_message_seq = [
-        "I failed my exam.",
-        "I'm really upset.",
-        "But it's okay, I'll try again.",
-        "Whatever happens, happens."
+        "I had the strangest dream last night.",
+        "What happened?",
+        "I saw my parents",
+        "Oh wow",
+        "They crossed the line this time!"
     ]
     with torch.no_grad():
         logits, emo_last_msg = model([dummy_message_seq], torch.tensor([len(dummy_message_seq)]))
         predicted_class = torch.argmax(logits).item()
         print(f"Predicted emotion class: {predicted_class}\tLogits: {torch.sigmoid(logits)}")
-        print(f"Emotion = {labels[int(predicted_class)]}")
-        print(f"Last Message Emotion = {emo_last_msg}")
+        print(f"Emotion (BERT + BiLSTM) = {labels[int(predicted_class)]}")
+        print(f"Last Message Emotion (BERT) = {emo_last_msg[0]}")

@@ -87,9 +87,13 @@ def get_llm_rag_response(recent_entry, context_history):
     )
     content = response.choices[0].message.content
     raw_text = content.strip() if content is not None else ""
+
+    # DEBUG
+    print(f"Raw text: {raw_text}")
+
     suggestions = [
         line.strip().replace('\n', ' ')
-        for line in raw_text.split('\n\n')
+        for line in raw_text.split('\n')
         if line.strip()
     ]
     return suggestions[:3]

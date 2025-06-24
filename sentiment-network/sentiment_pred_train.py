@@ -4,6 +4,7 @@ from torch.utils.data import Dataset, DataLoader
 from sentiment_predict import SentimentPredictionEngine, tokenizer
 import json
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from tqdm import tqdm
 from torch.nn.utils.rnn import pad_sequence, pack_padded_sequence, pad_packed_sequence
 
@@ -49,10 +50,10 @@ def collate_fn(batch):
     return padded_sequences, torch.tensor(labels), torch.tensor(lengths)
 
 train_dataset = ConversationDataset(train_conversations, train_labels)
-dataloader = DataLoader(train_dataset, batch_size=128, shuffle=True, collate_fn=collate_fn)
+dataloader = DataLoader(train_dataset, batch_size=64, shuffle=True, collate_fn=collate_fn)
 
 val_dataset = ConversationDataset(val_conversations, val_labels)
-val_dataloader = DataLoader(val_dataset, batch_size=128, shuffle=False, collate_fn=collate_fn)
+val_dataloader = DataLoader(val_dataset, batch_size=64, shuffle=False, collate_fn=collate_fn)
 
 # Set device
 if torch.backends.mps.is_available():
@@ -94,8 +95,17 @@ def validate(model, dataloader):
 # Trying to train using MPS
 num_epochs = 1
 loss_list = []
+train_acc_list = []
+train_f1_list = []
+train_precision_list = []
+train_recall_list = []
+
 for epoch in range(num_epochs):
     model.train()
+    all_preds = []
+    all_labels = []
+    # correct_preds = 0
+    # total = 0
     for msg_sequences, labels, lengths in tqdm(dataloader):
         labels = labels.to(device)
         lengths = lengths.to(device)
@@ -105,7 +115,21 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
         loss_list.append(loss.item())
+        preds = torch.argmax(logits, dim=1)
+        # correct_preds += (preds == labels).sum().items()
+        # total += labels.size(0)
+        all_preds.extend(preds.cpu().numpy())
+        all_labels.extend(labels.cpu().numpy())
         print(f"Epoch {epoch+1}, Loss: {loss.item()}")
+
+    train_acc = accuracy_score(all_labels, all_preds)
+    precision, recall, f1, _ = precision_recall_fscore_support(all_labels, all_preds, average='macro', zero_division=0)
+    train_acc_list.append(train_acc)
+    train_f1_list.append(f1)
+    train_precision_list.append(precision)
+    train_recall_list.append(recall)
+    print(f"Train Accuracy: {train_acc:.4f} | Precision: {precision:.4f} | Recall: {recall:.4f} | F1: {f1:.4f}")
+          
     # Validate after each epoch
     validate(model, val_dataloader)
 

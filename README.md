@@ -1,5 +1,7 @@
 # dost-com
-Text Sentiment Analysis Chat Application - for DA225o Deep Learning Course at IISc
+### Text Sentiment Analysis Chat Application - for DA225o Deep Learning Course at IISc
+
+# Application - [Dost-Com](https://dostcom.vercel.app/)
 
 ## Project Overview
 > Today's chat applications are built around the same building blocks used when they were emerging -- one-on-one chats, groups, multiple modalities (text, audio, video, emojis, etc.), and any new chat application has pretty much the same functionality.
@@ -17,6 +19,7 @@ Potential Dataset - [Kaggle Data Set](https://www.kaggle.com/datasets/parulpande
 
 ### Task Distribution
 - *Web GUI*: Ishwer
+- *Back-end*: Shubham
 - *Data Preparation*: Manish, Shubham
 - *Transformer*: Deepshikhar, Rishabh
 - *Sentiment Analytics*: Deepshikhar
@@ -25,9 +28,6 @@ Potential Dataset - [Kaggle Data Set](https://www.kaggle.com/datasets/parulpande
 - *LLM Evaluation*: Ishwer
 - *Database*: Yuvasree
 - *Project Report*: Sanket + **ALL**
-
-## Potential Scope
-- *Add RAG based context retrieval for entire chat in order to reduce LLM API payload size (tokens)*
 
 
 # Information for Reference
@@ -82,8 +82,6 @@ Potential Dataset - [Kaggle Data Set](https://www.kaggle.com/datasets/parulpande
 ```
 
 ## Vercel Web-UI
-
-# Link to Application -> [Dost-Com](https://dostcom.vercel.app/)
 
 ##### Prototype-1 of Web GUI
 ![Chat application with sentiment analysis](/images/prototype-1.png)

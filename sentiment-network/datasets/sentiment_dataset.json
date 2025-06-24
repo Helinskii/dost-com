@@ -1,0 +1,1315 @@
+[
+  {
+    "sequence": [
+      "Hey, how was your job interview today?",
+      "It didn't go well at all",
+      "Oh no, what happened?",
+      "I completely blanked on their technical questions",
+      "I'm sure you did better than you think",
+      "No, I really messed up. I've been preparing for weeks",
+      "I feel like such a failure right now"
+    ],
+    "emotion_label": 0,
+    "emotion_name": "sadness"
+  },
+  {
+    "sequence": [
+      "Guess what just happened!",
+      "What?? Tell me!",
+      "I got the promotion I applied for!",
+      "OMG that's amazing! Congratulations!",
+      "Thank you! I still can't believe it",
+      "You totally deserve this, you've worked so hard",
+      "I'm literally jumping up and down with excitement!"
+    ],
+    "emotion_label": 1,
+    "emotion_name": "joy"
+  },
+  {
+    "sequence": [
+      "I need to tell you something",
+      "Sure, what's up?",
+      "I think I'm falling for someone",
+      "Really? Who is it?",
+      "It's Sarah from my art class",
+      "That's so sweet! How long have you felt this way?",
+      "I love everything about her - her laugh, her smile, just everything"
+    ],
+    "emotion_label": 2,
+    "emotion_name": "love"
+  },
+  {
+    "sequence": [
+      "I can't believe what my roommate did",
+      "What happened now?",
+      "She ate my leftover pizza that I was saving",
+      "Again? Didn't you talk to her about this?",
+      "Yes! And she promised she wouldn't do it anymore",
+      "That's so disrespectful",
+      "I'm absolutely furious! I can't live with someone so selfish!"
+    ],
+    "emotion_label": 3,
+    "emotion_name": "anger"
+  },
+  {
+    "sequence": [
+      "I have to give a presentation tomorrow",
+      "That's exciting! What's it about?",
+      "My research project, but I'm really nervous",
+      "You'll do great, you know your stuff",
+      "What if I forget everything?",
+      "Just take deep breaths and remember your key points",
+      "I'm terrified I'll humiliate myself in front of everyone"
+    ],
+    "emotion_label": 4,
+    "emotion_name": "fear"
+  },
+  {
+    "sequence": [
+      "You'll never believe who I ran into today",
+      "Who?",
+      "My elementary school teacher, Mrs. Johnson",
+      "No way! Where?",
+      "At the grocery store, and she remembered my name",
+      "After all these years? That's incredible",
+      "I'm completely shocked she still remembered me!"
+    ],
+    "emotion_label": 5,
+    "emotion_name": "surprise"
+  },
+  {
+    "sequence": [
+      "How did your date go last night?",
+      "It was okay I guess",
+      "Just okay? That doesn't sound very enthusiastic",
+      "He seemed nice but there was no spark",
+      "Maybe give it another chance?",
+      "I don't think so. I felt nothing",
+      "I'm so disappointed, I really hoped this one would work out"
+    ],
+    "emotion_label": 0,
+    "emotion_name": "sadness"
+  },
+  {
+    "sequence": [
+      "I have news about the concert tickets",
+      "Please tell me you got them!",
+      "I did! Front row seats!",
+      "Are you serious?! How did you manage that?",
+      "I waited online for 3 hours but it was worth it",
+      "This is going to be the best concert ever!",
+      "I can't contain my happiness! We're going to see them live!"
+    ],
+    "emotion_label": 1,
+    "emotion_name": "joy"
+  },
+  {
+    "sequence": [
+      "I made dinner for Tom last night",
+      "Aww that's sweet! How did it go?",
+      "He loved it, and we talked for hours",
+      "You two are so cute together",
+      "He told me he's never felt this way before",
+      "That's beautiful! You both deserve happiness",
+      "I'm completely head over heels for him"
+    ],
+    "emotion_label": 2,
+    "emotion_name": "love"
+  },
+  {
+    "sequence": [
+      "Did you hear what happened at work today?",
+      "No, what?",
+      "They gave my project to the new guy",
+      "What? But you've been working on it for months!",
+      "Exactly! I put in so much effort",
+      "That's completely unfair",
+      "I'm so angry I could punch something!"
+    ],
+    "emotion_label": 3,
+    "emotion_name": "anger"
+  },
+  {
+    "sequence": [
+      "The doctor called with my test results",
+      "Oh, what did they say?",
+      "They want to run more tests",
+      "That could just be routine though",
+      "But what if something's really wrong?",
+      "Try not to worry until you know more",
+      "I'm scared about what they might find"
+    ],
+    "emotion_label": 4,
+    "emotion_name": "fear"
+  },
+  {
+    "sequence": [
+      "Check your email right now",
+      "Why? What's in it?",
+      "Just check it, trust me",
+      "Okay, let me look... wait, is this real?",
+      "You won the scholarship!",
+      "I can't believe this is happening!",
+      "I'm absolutely stunned! This changes everything!"
+    ],
+    "emotion_label": 5,
+    "emotion_name": "surprise"
+  },
+  {
+    "sequence": [
+      "My grandmother went to the hospital yesterday",
+      "Oh no, is she okay?",
+      "She's stable but very weak",
+      "I'm so sorry to hear that",
+      "I wish I could be there with her",
+      "Can you visit her soon?",
+      "I feel so helpless being so far away"
+    ],
+    "emotion_label": 0,
+    "emotion_name": "sadness"
+  },
+  {
+    "sequence": [
+      "Remember how I was worried about my exam results?",
+      "Yeah, you were so stressed about it",
+      "Well, I got them back today",
+      "And...?",
+      "I got an A+! I'm top of the class!",
+      "That's incredible! All that studying paid off!",
+      "I'm over the moon! I've never been this happy!"
+    ],
+    "emotion_label": 1,
+    "emotion_name": "joy"
+  },
+  {
+    "sequence": [
+      "Jake surprised me with something yesterday",
+      "Ooh what did he do?",
+      "He recreated our first date perfectly",
+      "That's so romantic!",
+      "Same restaurant, same flowers, everything",
+      "He really pays attention to details",
+      "I love him more than words can express"
+    ],
+    "emotion_label": 2,
+    "emotion_name": "love"
+  },
+  {
+    "sequence": [
+      "My neighbor is playing music again",
+      "It's 2 AM! That's ridiculous",
+      "I've asked him nicely multiple times to keep it down",
+      "Have you talked to the landlord?",
+      "Yes, but nothing changes",
+      "That would drive me crazy too",
+      "I'm absolutely livid! I need my sleep!"
+    ],
+    "emotion_label": 3,
+    "emotion_name": "anger"
+  },
+  {
+    "sequence": [
+      "I think someone's been following me",
+      "What? Are you serious?",
+      "I've seen the same car behind me three times today",
+      "That's really concerning",
+      "Should I call the police?",
+      "Maybe just to be safe",
+      "I'm really frightened about this"
+    ],
+    "emotion_label": 4,
+    "emotion_name": "fear"
+  },
+  {
+    "sequence": [
+      "I just got off the phone with my sister",
+      "How is she doing?",
+      "She's getting married!",
+      "Wait, what? When did she get engaged?",
+      "Last night! She wanted to tell me first",
+      "I had no idea she was even dating someone seriously",
+      "I'm completely blown away by this news!"
+    ],
+    "emotion_label": 5,
+    "emotion_name": "surprise"
+  },
+  {
+    "sequence": [
+      "I didn't get into the university I wanted",
+      "Oh no, I'm so sorry",
+      "I worked so hard on that application",
+      "I know you did, you put everything into it",
+      "Now I don't know what I'm going to do",
+      "There are other great schools out there",
+      "I just feel so lost and disappointed right now"
+    ],
+    "emotion_label": 0,
+    "emotion_name": "sadness"
+  },
+  {
+    "sequence": [
+      "The adoption agency called!",
+      "Really? What did they say?",
+      "We've been matched with a birth mother!",
+      "Oh my goodness! That's wonderful news!",
+      "After three years of waiting",
+      "You're going to be amazing parents",
+      "I'm bursting with joy! Our dream is finally coming true!"
+    ],
+    "emotion_label": 1,
+    "emotion_name": "joy"
+  },
+  {
+    "sequence": [
+      "I have something to confess",
+      "What is it?",
+      "I think I'm falling for my best friend",
+      "Really? How long have you felt this way?",
+      "For months now, every time we hang out",
+      "Have you thought about telling them?",
+      "I'm deeply in love but scared to ruin our friendship"
+    ],
+    "emotion_label": 2,
+    "emotion_name": "love"
+  },
+  {
+    "sequence": [
+      "My boss just blamed me for his mistake",
+      "That's not fair at all",
+      "In front of the entire team!",
+      "How embarrassing and unprofessional",
+      "I corrected him but he doubled down",
+      "Some people can't admit when they're wrong",
+      "I'm furious! I don't deserve to be treated like this!"
+    ],
+    "emotion_label": 3,
+    "emotion_name": "anger"
+  },
+  {
+    "sequence": [
+      "I have to fly tomorrow and there's bad weather",
+      "Are they canceling flights?",
+      "Not yet, but the forecast looks terrible",
+      "Flying in storms can be scary",
+      "I hate turbulence even on good days",
+      "Try to think positive thoughts",
+      "I'm terrified something bad will happen"
+    ],
+    "emotion_label": 4,
+    "emotion_name": "fear"
+  },
+  {
+    "sequence": [
+      "I just checked my bank account",
+      "Routine check or something specific?",
+      "I was expecting my paycheck to be deposited",
+      "And?",
+      "There's an extra $5000 in there",
+      "That doesn't seem right, you should call the bank",
+      "I'm completely shocked! I have no idea where this came from!"
+    ],
+    "emotion_label": 5,
+    "emotion_name": "surprise"
+  },
+  {
+    "sequence": [
+      "My dog has been missing for two days",
+      "Oh no! Have you put up flyers?",
+      "Yes, and called all the shelters",
+      "I'm sure someone will find him",
+      "He's never been away from home this long",
+      "Dogs are smart, he might find his way back",
+      "I'm heartbroken, I can't bear the thought of losing her"
+    ],
+    "emotion_label": 0,
+    "emotion_name": "sadness"
+  },
+  {
+    "sequence": [
+      "I got accepted to my dream graduate program!",
+      "Which program?",
+      "MIT's computer science PhD program!",
+      "That's one of the best programs in the world!",
+      "I still can't believe they chose me",
+      "You worked so hard for this",
+      "I'm absolutely thrilled! This is everything I've worked for!"
+    ],
+    "emotion_label": 1,
+    "emotion_name": "joy"
+  },
+  {
+    "sequence": [
+      "Kevin wrote me the most beautiful poem",
+      "Aww, what was it about?",
+      "About how I changed his life for the better",
+      "That's so romantic and thoughtful",
+      "He said I'm his inspiration and his peace",
+      "You two have something really special",
+      "I love him with all my heart and soul"
+    ],
+    "emotion_label": 2,
+    "emotion_name": "love"
+  },
+  {
+    "sequence": [
+      "The airline lost my luggage with all my wedding clothes",
+      "Oh no! Your wedding is next week!",
+      "Everything I need for the ceremony was in that bag",
+      "Can they track it down?",
+      "They said it could take up to two weeks",
+      "But your wedding can't wait that long",
+      "I'm so angry I could scream! This is a disaster!"
+    ],
+    "emotion_label": 3,
+    "emotion_name": "anger"
+  },
+  {
+    "sequence": [
+      "I think my house might be haunted",
+      "What makes you think that?",
+      "Things keep moving around when I'm not looking",
+      "Could be the wind or settling foundation",
+      "But I heard footsteps upstairs when I was alone",
+      "That does sound unsettling",
+      "I'm scared to sleep in my own home"
+    ],
+    "emotion_label": 4,
+    "emotion_name": "fear"
+  },
+  {
+    "sequence": [
+      "I just got a call from a TV producer",
+      "About what?",
+      "They want to feature my bakery on their show",
+      "Which show?",
+      "The Food Network's 'Best Bakeries in America'",
+      "That's huge for your business!",
+      "I'm completely amazed! This exposure will change everything!"
+    ],
+    "emotion_label": 5,
+    "emotion_name": "surprise"
+  },
+  {
+    "sequence": [
+      "My childhood pet goldfish died today",
+      "Aww, how old was he?",
+      "I had him for 8 years",
+      "That's actually a really long life for a goldfish",
+      "I know it sounds silly but I'm really sad",
+      "It's not silly at all, pets are family",
+      "I'm going to miss watching him swim around his tank"
+    ],
+    "emotion_label": 0,
+    "emotion_name": "sadness"
+  },
+  {
+    "sequence": [
+      "I finally learned how to ride a motorcycle!",
+      "That's so cool! How long did it take?",
+      "Six months of practice and lessons",
+      "Was it scary at first?",
+      "Terrifying! But now I love the freedom",
+      "Where will you ride first?",
+      "I'm so excited to explore the countryside!"
+    ],
+    "emotion_label": 1,
+    "emotion_name": "joy"
+  },
+  {
+    "sequence": [
+      "Maria and I are planning to move in together",
+      "That's a big step! How do you feel about it?",
+      "Nervous but excited",
+      "It shows how serious you are about each other",
+      "I want to wake up next to her every morning",
+      "That's beautiful",
+      "I love her so much I want to share my whole life with her"
+    ],
+    "emotion_label": 2,
+    "emotion_name": "love"
+  },
+  {
+    "sequence": [
+      "Someone keyed my car in the parking lot",
+      "What?! Why would someone do that?",
+      "I have no idea, it was completely random",
+      "Did anyone see who did it?",
+      "No, and there are no security cameras",
+      "That's going to be expensive to fix",
+      "I'm so mad! Why do people destroy other people's property?"
+    ],
+    "emotion_label": 3,
+    "emotion_name": "anger"
+  },
+  {
+    "sequence": [
+      "I have to get surgery next week",
+      "What kind of surgery?",
+      "They found something suspicious in my scan",
+      "I'm sure it's nothing serious",
+      "But what if it is? What if it's cancer?",
+      "Try not to think the worst",
+      "I'm terrified of what they might find when they operate"
+    ],
+    "emotion_label": 4,
+    "emotion_name": "fear"
+  },
+  {
+    "sequence": [
+      "I just found out I have a famous relative",
+      "Really? Who?",
+      "My great-grandmother was apparently a silent film star",
+      "That's incredible! What was her name?",
+      "Eleanor Hartwell, she was in dozens of movies",
+      "I've never heard of her but that era was so long ago",
+      "I'm amazed that I'm related to Hollywood royalty!"
+    ],
+    "emotion_label": 5,
+    "emotion_name": "surprise"
+  },
+  {
+    "sequence": [
+      "I failed my driving test for the third time",
+      "What happened this time?",
+      "I hit a cone during parallel parking",
+      "That's so frustrating",
+      "All my friends already have their licenses",
+      "You'll get it next time, don't give up",
+      "I feel like such a failure, maybe I'm just not meant to drive"
+    ],
+    "emotion_label": 0,
+    "emotion_name": "sadness"
+  },
+  {
+    "sequence": [
+      "The whole family surprised me for my birthday!",
+      "What did they do?",
+      "They flew in from three different states",
+      "That must have taken a lot of planning",
+      "My sister organized the whole thing in secret",
+      "What a wonderful family you have",
+      "I'm overjoyed! I thought everyone had forgotten!"
+    ],
+    "emotion_label": 1,
+    "emotion_name": "joy"
+  },
+  {
+    "sequence": [
+      "I realized something important about Taylor today",
+      "What did you realize?",
+      "That I don't just like her, I'm in love with her",
+      "How do you know the difference?",
+      "The way my heart races when she texts me",
+      "That's a beautiful feeling",
+      "I love everything about her - her laugh, her kindness, her dreams"
+    ],
+    "emotion_label": 2,
+    "emotion_name": "love"
+  },
+  {
+    "sequence": [
+      "My professor accused me of cheating on the exam",
+      "What? But you studied so hard!",
+      "That's what I told him, but he won't listen",
+      "Do you have any proof you didn't cheat?",
+      "How do you prove a negative?",
+      "Can you appeal to the department head?",
+      "I'm furious that my integrity is being questioned!"
+    ],
+    "emotion_label": 3,
+    "emotion_name": "anger"
+  },
+  {
+    "sequence": [
+      "I think someone's been watching my house",
+      "What makes you think that?",
+      "I've seen the same car parked across the street",
+      "Could be visiting a neighbor",
+      "But it's there at weird hours and the person just sits",
+      "That is strange behavior",
+      "I'm scared they're planning something bad"
+    ],
+    "emotion_label": 4,
+    "emotion_name": "fear"
+  },
+  {
+    "sequence": [
+      "I opened my front door this morning and found something",
+      "What was it?",
+      "A basket full of fresh vegetables",
+      "From who?",
+      "No note, completely anonymous",
+      "Maybe from your garden-loving neighbor?",
+      "I'm so surprised by this random act of kindness!"
+    ],
+    "emotion_label": 5,
+    "emotion_name": "surprise"
+  },
+  {
+    "sequence": [
+      "I have to say goodbye to my college friends tomorrow",
+      "Graduation is bittersweet, isn't it?",
+      "We're all moving to different cities",
+      "You'll stay in touch though",
+      "It won't be the same as living in the same dorm",
+      "True, but your friendship will endure",
+      "I'm so sad this chapter of my life is ending"
+    ],
+    "emotion_label": 0,
+    "emotion_name": "sadness"
+  },
+  {
+    "sequence": [
+      "I got the internship at Google!",
+      "No way! That's incredibly competitive!",
+      "I know! Thousands of people applied",
+      "What will you be working on?",
+      "Machine learning projects with their AI team",
+      "This is going to open so many doors for you",
+      "I'm ecstatic! This is the opportunity of a lifetime!"
+    ],
+    "emotion_label": 1,
+    "emotion_name": "joy"
+  },
+  {
+    "sequence": [
+      "I think I want to marry Jessica",
+      "Wow, that's serious! How long have you been dating?",
+      "Two years, and I can't imagine life without her",
+      "Have you thought about proposing?",
+      "I've been looking at rings",
+      "That's so exciting!",
+      "I love her more than I thought it was possible to love someone"
+    ],
+    "emotion_label": 2,
+    "emotion_name": "love"
+  },
+  {
+    "sequence": [
+      "The contractor I hired did terrible work",
+      "What's wrong with it?",
+      "The tiles are crooked and the paint is already peeling",
+      "Did you pay him already?",
+      "Unfortunately yes, the full amount",
+      "Can you get him to come back and fix it?",
+      "I'm absolutely livid! He took my money and did shoddy work!"
+    ],
+    "emotion_label": 3,
+    "emotion_name": "anger"
+  },
+  {
+    "sequence": [
+      "I heard there might be layoffs at work",
+      "From who? Is it official?",
+      "Just rumors, but they're cutting budgets",
+      "How secure is your position?",
+      "I'm one of the newer employees",
+      "Try not to worry until you know for sure",
+      "I'm scared I'll lose my job and can't pay my bills"
+    ],
+    "emotion_label": 4,
+    "emotion_name": "fear"
+  },
+  {
+    "sequence": [
+      "I just checked my email and got some news",
+      "Good news or bad news?",
+      "I'm not sure how to categorize it",
+      "What is it?",
+      "My ex from five years ago wants to meet up",
+      "That's random! Did they say why?",
+      "I'm completely surprised they reached out after all this time!"
+    ],
+    "emotion_label": 5,
+    "emotion_name": "surprise"
+  },
+  {
+    "sequence": [
+      "My parents are getting divorced after 30 years",
+      "Oh no, I'm so sorry to hear that",
+      "I never saw it coming",
+      "That must be really hard to process",
+      "I always thought they were happy together",
+      "Sometimes people grow apart",
+      "I'm devastated that our family is falling apart"
+    ],
+    "emotion_label": 0,
+    "emotion_name": "sadness"
+  },
+  {
+    "sequence": [
+      "I just bought my first house!",
+      "Congratulations! That's huge!",
+      "I finally have a place that's truly mine",
+      "How does it feel to be a homeowner?",
+      "Scary but exciting at the same time",
+      "What's your favorite room?",
+      "I'm so happy I could cry! This is my dream come true!"
+    ],
+    "emotion_label": 1,
+    "emotion_name": "joy"
+  },
+  {
+    "sequence": [
+      "I spent the whole day with Nathan yesterday",
+      "What did you guys do?",
+      "We just walked around the city and talked",
+      "Sounds like a perfect date",
+      "Every moment with him feels magical",
+      "You're glowing when you talk about him",
+      "I love how he makes me feel like the most important person in the world"
+    ],
+    "emotion_label": 2,
+    "emotion_name": "love"
+  },
+  {
+    "sequence": [
+      "Someone hacked into my social media accounts",
+      "What? How did you find out?",
+      "My friends said I was posting weird things",
+      "Did you change your passwords?",
+      "Yes, but they already posted embarrassing stuff",
+      "At least you caught it before more damage",
+      "I'm so angry that someone invaded my privacy like this!"
+    ],
+    "emotion_label": 3,
+    "emotion_name": "anger"
+  },
+  {
+    "sequence": [
+      "I think I'm being stalked by my ex",
+      "That's really serious, what's been happening?",
+      "He shows up everywhere I go",
+      "Have you documented these incidents?",
+      "I've been taking photos and keeping a log",
+      "You should definitely report this to police",
+      "I'm afraid of what he might do next"
+    ],
+    "emotion_label": 4,
+    "emotion_name": "fear"
+  },
+  {
+    "sequence": [
+      "I just got a call from my high school principal",
+      "That's random, what did they want?",
+      "They want me to give the commencement speech",
+      "For this year's graduation? That's an honor!",
+      "Apparently they've been following my career",
+      "What made them choose you?",
+      "I'm completely shocked they even remembered me!"
+    ],
+    "emotion_label": 5,
+    "emotion_name": "surprise"
+  },
+  {
+    "sequence": [
+      "I won't be able to go to my sister's wedding",
+      "Why not? What happened?",
+      "I can't afford the plane ticket",
+      "Can't your family help?",
+      "They're already spending so much on the wedding",
+      "Maybe you can find a cheaper flight?",
+      "I'm so sad I'll miss the most important day of her life"
+    ],
+    "emotion_label": 0,
+    "emotion_name": "sadness"
+  },
+  {
+    "sequence": [
+      "I just ran my first marathon!",
+      "Amazing! How do you feel?",
+      "Exhausted but incredible!",
+      "What was your time?",
+      "4 hours and 23 minutes",
+      "That's fantastic for your first marathon!",
+      "I'm so proud of myself! I never thought I could do it!"
+    ],
+    "emotion_label": 1,
+    "emotion_name": "joy"
+  },
+  {
+    "sequence": [
+      "I had the most perfect evening with Sophie",
+      "Tell me about it!",
+      "We cooked dinner together and danced in the kitchen",
+      "That sounds incredibly romantic",
+      "Then we watched the stars from her balcony",
+      "Simple moments can be the most beautiful",
+      "I love her so much it physically hurts in the best way"
+    ],
+    "emotion_label": 2,
+    "emotion_name": "love"
+  },
+  {
+    "sequence": [
+      "My upstairs neighbor keeps flooding my apartment",
+      "What? How does that happen?",
+      "They leave their bathtub running and it overflows",
+      "Have you talked to them about it?",
+      "Multiple times! They just don't care",
+      "That's causing damage to your stuff",
+      "I'm absolutely furious! This is the third time this month!"
+    ],
+    "emotion_label": 3,
+    "emotion_name": "anger"
+  },
+  {
+    "sequence": [
+      "I got some concerning news from my doctor",
+      "What kind of news?",
+      "My blood work shows some abnormalities",
+      "What does that mean exactly?",
+      "They want to do more tests to rule things out",
+      "I'm sure it's probably nothing serious",
+      "I'm terrified they'll find something really wrong with me"
+    ],
+    "emotion_label": 4,
+    "emotion_name": "fear"
+  },
+  {
+    "sequence": [
+      "I just found out something crazy about my family history",
+      "What did you discover?",
+      "My great-great-grandfather was a famous outlaw",
+      "Like a Wild West outlaw?",
+      "Yes! He robbed trains in the 1800s",
+      "That's like something out of a movie!",
+      "I'm completely amazed that I'm related to a real-life bandit!"
+    ],
+    "emotion_label": 5,
+    "emotion_name": "surprise"
+  },
+  {
+    "sequence": [
+      "Guess who just called me?",
+      "I have no idea, who?",
+      "Netflix! They want to buy my screenplay!",
+      "Are you kidding me right now?",
+      "I'm not joking! They made an offer!",
+      "This is incredible! You're going to be famous!",
+      "I can't believe my dream is actually coming true!"
+    ],
+    "emotion_label": 1,
+    "emotion_name": "joy"
+  },
+  {
+    "sequence": [
+      "Emma and I had the most perfect evening",
+      "Tell me all about it!",
+      "We watched the sunset from the beach",
+      "That sounds so romantic",
+      "She fell asleep in my arms under the stars",
+      "You two are meant to be together",
+      "I'm so in love with her it takes my breath away"
+    ],
+    "emotion_label": 2,
+    "emotion_name": "love"
+  },
+  {
+    "sequence": [
+      "Someone stole my bike from campus",
+      "What? When did this happen?",
+      "Sometime last night, it was locked up",
+      "Did you report it to campus security?",
+      "Yes, but they said there's not much they can do",
+      "That's so frustrating",
+      "I'm so angry! That bike was expensive and I need it!"
+    ],
+    "emotion_label": 3,
+    "emotion_name": "anger"
+  },
+  {
+    "sequence": [
+      "I think I heard someone break into the house next door",
+      "Are you sure? What did you hear?",
+      "Glass breaking and footsteps",
+      "Did you call 911?",
+      "Yes, but what if they come here next?",
+      "Just stay inside and keep the doors locked",
+      "I'm scared they might still be in the neighborhood"
+    ],
+    "emotion_label": 4,
+    "emotion_name": "fear"
+  },
+  {
+    "sequence": [
+      "I need to tell you what happened at lunch today",
+      "Okay, what's going on?",
+      "I was eating alone as usual",
+      "And?",
+      "The popular kids invited me to sit with them",
+      "Really? That's so unexpected!",
+      "I'm totally surprised they even knew my name!"
+    ],
+    "emotion_label": 5,
+    "emotion_name": "surprise"
+  },
+  {
+    "sequence": [
+      "I went to visit my childhood home today",
+      "How was it?",
+      "They tore it down to build a parking lot",
+      "Oh no, that must have been hard to see",
+      "So many memories were made in that house",
+      "I'm sorry, that's really tough",
+      "I feel like a piece of my childhood just died"
+    ],
+    "emotion_label": 0,
+    "emotion_name": "sadness"
+  },
+  {
+    "sequence": [
+      "I have amazing news about my art!",
+      "What happened?",
+      "A gallery wants to display my paintings!",
+      "That's fantastic! Which gallery?",
+      "The Morrison Gallery downtown",
+      "That's such a prestigious place!",
+      "I'm absolutely ecstatic! This is my big break!"
+    ],
+    "emotion_label": 1,
+    "emotion_name": "joy"
+  },
+  {
+    "sequence": [
+      "David proposed to me last night",
+      "Oh my god! What did you say?",
+      "I said yes, of course!",
+      "Congratulations! I'm so happy for you both!",
+      "It was so perfect, just like in the movies",
+      "You deserve all the happiness in the world",
+      "I love him with every fiber of my being"
+    ],
+    "emotion_label": 2,
+    "emotion_name": "love"
+  },
+  {
+    "sequence": [
+      "My group partner didn't show up for our presentation",
+      "What? You were presenting today?",
+      "Yes, and I had to do the whole thing alone",
+      "That's completely irresponsible of them",
+      "The professor docked points for incomplete work",
+      "Can you talk to the professor about it?",
+      "I'm absolutely enraged! This affects my grade!"
+    ],
+    "emotion_label": 3,
+    "emotion_name": "anger"
+  },
+  {
+    "sequence": [
+      "My car started making weird noises on the highway",
+      "What kind of noises?",
+      "Like grinding and clicking sounds",
+      "That doesn't sound good",
+      "And now the engine light is on",
+      "You should pull over and call for help",
+      "I'm afraid the engine might explode or something"
+    ],
+    "emotion_label": 4,
+    "emotion_name": "fear"
+  },
+  {
+    "sequence": [
+      "Remember my weird neighbor I told you about?",
+      "The one who never talks to anyone?",
+      "Yeah, well he knocked on my door today",
+      "That's unusual for him",
+      "He brought me homemade cookies and thanked me",
+      "Thanked you for what?",
+      "I'm amazed! Turns out he's actually really sweet!"
+    ],
+    "emotion_label": 5,
+    "emotion_name": "surprise"
+  },
+  {
+    "sequence": [
+      "I found out why my friends have been avoiding me",
+      "What did you discover?",
+      "They think I said something bad about them",
+      "Did you?",
+      "No! But they won't listen to my side",
+      "That's really unfair",
+      "I'm devastated that they don't trust me"
+    ],
+    "emotion_label": 0,
+    "emotion_name": "sadness"
+  },
+  {
+    "sequence": [
+      "I just got back from my vacation",
+      "How was it? You look refreshed!",
+      "It was absolutely perfect!",
+      "Tell me everything!",
+      "Beautiful beaches, amazing food, great weather",
+      "It sounds like exactly what you needed",
+      "I feel so renewed and happy! Best trip ever!"
+    ],
+    "emotion_label": 1,
+    "emotion_name": "joy"
+  },
+  {
+    "sequence": [
+      "I wrote a letter to tell Mark how I feel",
+      "That's brave! Are you going to give it to him?",
+      "I already did, this morning",
+      "What was his reaction?",
+      "He read it and smiled the biggest smile",
+      "That sounds promising!",
+      "I love him so much, I had to take the risk"
+    ],
+    "emotion_label": 2,
+    "emotion_name": "love"
+  },
+  {
+    "sequence": [
+      "The restaurant messed up my order again",
+      "The same place as last week?",
+      "Yes! And when I complained, they were rude",
+      "That's terrible customer service",
+      "They acted like it was my fault",
+      "You should leave a review",
+      "I'm so mad I'm never going back there!"
+    ],
+    "emotion_label": 3,
+    "emotion_name": "anger"
+  },
+  {
+    "sequence": [
+      "I keep getting these strange phone calls",
+      "What kind of calls?",
+      "Heavy breathing, then they hang up",
+      "That's really creepy",
+      "It's happened five times this week",
+      "You should change your number",
+      "I'm scared someone is watching me"
+    ],
+    "emotion_label": 4,
+    "emotion_name": "fear"
+  },
+  {
+    "sequence": [
+      "You know that lottery ticket I bought yesterday?",
+      "Yeah, the one you said was a waste of money?",
+      "Well, I just checked the numbers",
+      "And?",
+      "I won $50,000!",
+      "Are you serious right now?",
+      "I can't believe this actually happened to me!"
+    ],
+    "emotion_label": 5,
+    "emotion_name": "surprise"
+  },
+  {
+    "sequence": [
+      "I had to put my cat to sleep today",
+      "Oh honey, I'm so sorry",
+      "She was 16 years old and suffering",
+      "You did the right thing for her",
+      "I know, but it still hurts so much",
+      "She lived a long, happy life with you",
+      "I miss her already and feel so empty inside"
+    ],
+    "emotion_label": 0,
+    "emotion_name": "sadness"
+  },
+  {
+    "sequence": [
+      "I got the job offer!",
+      "Which one? The startup or the big company?",
+      "The startup! They offered me exactly what I wanted!",
+      "That's incredible! When do you start?",
+      "Next Monday! I can't wait to begin",
+      "This is such great news!",
+      "I'm thrilled! This is the opportunity I've been waiting for!"
+    ],
+    "emotion_label": 1,
+    "emotion_name": "joy"
+  },
+  {
+    "sequence": [
+      "Lisa and I had our first real conversation today",
+      "About what?",
+      "Everything - our dreams, fears, hopes",
+      "That sounds really meaningful",
+      "I've never connected with someone like this before",
+      "It sounds like you really care about her",
+      "I'm falling in love with her mind and soul"
+    ],
+    "emotion_label": 2,
+    "emotion_name": "love"
+  },
+  {
+    "sequence": [
+      "The construction next door starts at 6 AM every day",
+      "That's way too early!",
+      "I've complained to the city but nothing changes",
+      "Don't they have noise ordinances?",
+      "Apparently not until 7 AM",
+      "That one hour makes a big difference",
+      "I'm furious! I haven't slept properly in weeks!"
+    ],
+    "emotion_label": 3,
+    "emotion_name": "anger"
+  },
+  {
+    "sequence": [
+      "I think I left my laptop on the train",
+      "Oh no! Did you call the train station?",
+      "Yes, but they haven't found it yet",
+      "All your work files are on there, right?",
+      "Everything! Years of projects and photos",
+      "Hopefully someone honest found it",
+      "I'm terrified I'll never see it again"
+    ],
+    "emotion_label": 4,
+    "emotion_name": "fear"
+  },
+  {
+    "sequence": [
+      "I went to clean out my grandmother's attic",
+      "Find anything interesting?",
+      "I found a box of old letters",
+      "What kind of letters?",
+      "Love letters from my grandfather during the war",
+      "That's like finding treasure!",
+      "I'm amazed by this glimpse into their romance!"
+    ],
+    "emotion_label": 5,
+    "emotion_name": "surprise"
+  },
+  {
+    "sequence": [
+      "My best friend is moving across the country",
+      "When is she leaving?",
+      "Next month for a new job",
+      "That's exciting for her career",
+      "I know, but I'm going to miss her terribly",
+      "You can still video chat and visit",
+      "It won't be the same, I'm really going to be lonely"
+    ],
+    "emotion_label": 0,
+    "emotion_name": "sadness"
+  },
+  {
+    "sequence": [
+      "My daughter took her first steps today!",
+      "Oh my goodness! That's such a milestone!",
+      "She walked right into my arms",
+      "Did you get it on video?",
+      "Yes! I was crying tears of joy",
+      "Those are the moments you never forget",
+      "I'm so proud and happy I could burst!"
+    ],
+    "emotion_label": 1,
+    "emotion_name": "joy"
+  },
+  {
+    "sequence": [
+      "I think Alex might be the one",
+      "Really? What makes you think that?",
+      "The way he looks at me, how he makes me laugh",
+      "You do seem happier lately",
+      "He makes even ordinary moments feel magical",
+      "That's beautiful, you deserve that happiness",
+      "I love him more deeply than I thought possible"
+    ],
+    "emotion_label": 2,
+    "emotion_name": "love"
+  },
+  {
+    "sequence": [
+      "Someone used my credit card fraudulently",
+      "What?! How much did they spend?",
+      "$3000 on things I never bought",
+      "Did you report it to the bank?",
+      "Yes, but they said it could take weeks to resolve",
+      "That's ridiculous, it's clearly fraud",
+      "I'm absolutely livid that someone violated my trust like this!"
+    ],
+    "emotion_label": 3,
+    "emotion_name": "anger"
+  },
+  {
+    "sequence": [
+      "I got called for jury duty on a murder case",
+      "Wow, that's serious",
+      "I've never dealt with anything this intense",
+      "It must be overwhelming",
+      "What if I make the wrong decision?",
+      "Just follow the evidence and your conscience",
+      "I'm scared about having someone's life in my hands"
+    ],
+    "emotion_label": 4,
+    "emotion_name": "fear"
+  },
+  {
+    "sequence": [
+      "I was walking through the park today",
+      "Nice day for a walk",
+      "And I saw something incredible",
+      "What did you see?",
+      "A proposal! Right by the fountain",
+      "Aww, that's so romantic!",
+      "I was completely surprised to witness such a beautiful moment!"
+    ],
+    "emotion_label": 5,
+    "emotion_name": "surprise"
+  },
+  {
+    "sequence": [
+      "The company I work for is going out of business",
+      "Oh no! When did you find out?",
+      "They announced it this morning",
+      "Do you have any leads on other jobs?",
+      "Not yet, this came out of nowhere",
+      "I'm sure you'll find something better",
+      "I feel so lost and uncertain about my future"
+    ],
+    "emotion_label": 0,
+    "emotion_name": "sadness"
+  },
+  {
+    "sequence": [
+      "I finally finished writing my novel!",
+      "That's amazing! How long did it take?",
+      "Three years of writing and rewriting",
+      "What's it about?",
+      "A mystery set in Victorian London",
+      "That sounds fascinating!",
+      "I'm absolutely elated! I can't believe I actually did it!"
+    ],
+    "emotion_label": 1,
+    "emotion_name": "joy"
+  },
+  {
+    "sequence": [
+      "Chris surprised me with breakfast in bed",
+      "That's so sweet of him!",
+      "Pancakes, fresh fruit, and coffee",
+      "What's the special occasion?",
+      "No occasion, he just wanted to show he cares",
+      "Those are the best kind of surprises",
+      "I love how thoughtful and caring he is"
+    ],
+    "emotion_label": 2,
+    "emotion_name": "love"
+  },
+  {
+    "sequence": [
+      "My landlord is raising my rent by 40%",
+      "That's outrageous! Can he legally do that?",
+      "Unfortunately yes, my lease is up",
+      "Can you afford the increase?",
+      "Absolutely not, I'll have to move",
+      "The housing market is so unfair right now",
+      "I'm so angry about being priced out of my own neighborhood!"
+    ],
+    "emotion_label": 3,
+    "emotion_name": "anger"
+  },
+  {
+    "sequence": [
+      "I heard gunshots outside my apartment",
+      "Are you okay? Did you call police?",
+      "Yes, they're on their way",
+      "Stay away from the windows",
+      "I'm hiding in my bedroom closet",
+      "Good, just stay there until it's safe",
+      "I'm absolutely terrified this is happening so close to home"
+    ],
+    "emotion_label": 4,
+    "emotion_name": "fear"
+  },
+  {
+    "sequence": [
+      "I just got my DNA test results back",
+      "Find out anything interesting?",
+      "I have a half-sister I never knew about",
+      "What? How is that possible?",
+      "My dad apparently had another family",
+      "That must be a lot to process",
+      "I'm completely stunned by this revelation!"
+    ],
+    "emotion_label": 5,
+    "emotion_name": "surprise"
+  },
+  {
+    "sequence": [
+      "I didn't get the scholarship I applied for",
+      "I'm sorry to hear that",
+      "I really needed that money for college",
+      "Are there other scholarships you can apply for?",
+      "Maybe, but this was my best shot",
+      "Don't give up, there are always other options",
+      "I'm so discouraged, I don't know how I'll afford school"
+    ],
+    "emotion_label": 0,
+    "emotion_name": "sadness"
+  },
+  {
+    "sequence": [
+      "I won the photography contest!",
+      "Which contest? The local one?",
+      "No, the national competition!",
+      "That's incredible! What was your winning photo?",
+      "The sunset shot I took at the beach",
+      "I remember that one, it was beautiful",
+      "I'm on cloud nine! This could launch my career!"
+    ],
+    "emotion_label": 1,
+    "emotion_name": "joy"
+  },
+  {
+    "sequence": [
+      "I can't stop thinking about what Rachel said",
+      "What did she say?",
+      "That she's never felt a connection like ours before",
+      "That's really meaningful",
+      "I feel the same way about her",
+      "It sounds like you both found something special",
+      "I'm so in love with her it scares me how intense it is"
+    ],
+    "emotion_label": 2,
+    "emotion_name": "love"
+  },
+  {
+    "sequence": [
+      "My insurance denied my claim again",
+      "What reason did they give this time?",
+      "Some technicality about the paperwork",
+      "But you filled everything out correctly",
+      "I know! I've done everything they asked",
+      "Insurance companies can be so difficult",
+      "I'm absolutely infuriated by their games and delays!"
+    ],
+    "emotion_label": 3,
+    "emotion_name": "anger"
+  },
+  {
+    "sequence": [
+      "There's been a series of break-ins in our neighborhood",
+      "Really? How many houses?",
+      "Five houses just this week",
+      "That's terrible! Have they caught anyone?",
+      "Not yet, and they're getting bolder",
+      "You should get a security system",
+      "I'm afraid we might be next on their list"
+    ],
+    "emotion_label": 4,
+    "emotion_name": "fear"
+  },
+  {
+    "sequence": [
+      "I found something weird in my backyard",
+      "What kind of weird?",
+      "A metal box buried under the old tree",
+      "Did you open it?",
+      "Yes, it's full of old coins and jewelry",
+      "That sounds like it could be valuable!",
+      "I'm shocked! I think I found buried treasure!"
+    ],
+    "emotion_label": 5,
+    "emotion_name": "surprise"
+  }
+]

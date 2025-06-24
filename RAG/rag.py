@@ -16,7 +16,10 @@ except ImportError as e:
 
 
 # 1. Load embedding model (used for query embedding)
-embedding = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+embedding = HuggingFaceEmbeddings(
+    model_name="sentence-transformers/all-MiniLM-L6-v2",
+    model_kwargs={"device": "cpu"}
+    )
 
 # 2. Load existing Chroma vectorstore
 vectorstore = Chroma(
@@ -124,12 +127,12 @@ def call_rag(input_data, vectorstore):
 if __name__ == "__main__":
     # Expected input format
     dummy_message = {
-        "id": "353fc391-3afe-49a4-a88a-64a32aed0c85",
-        "content": "I feel motivated after talking to you Morrie",
+        "id": "353fc391-3ade-49a4-a88a-64a32aed0c85",
+        "content": "I'm sad I had a tough day today what a life my project is due at 12PM",
         "user": {
             "name": "Mitch"
         },
-        "sentiment": "joy",
+        "sentiment": "sad",
         "createdAt": "2025-06-07T11:29:07.095Z"
     }
 
