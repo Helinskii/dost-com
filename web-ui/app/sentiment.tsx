@@ -53,12 +53,12 @@ const emotionConfig = {
     label: 'Fear',
     description: 'Anxiety and concern'
   },
-  unknown: { 
-    icon: '🤔', 
+  surprise: { 
+    icon: '😮', 
     color: 'from-gray-400 to-slate-500', 
     bgColor: 'bg-gray-50',
-    label: 'Unknown',
-    description: 'Neutral or unclear'
+    label: 'Surprise',
+    description: 'Unexpected or unclear'
   }
 };
 
@@ -70,7 +70,14 @@ const ProgressBar: React.FC<{
   isActive?: boolean;
 }> = ({ value, emotion, config, isActive = false }) => {
   const percentage = Math.round(value * 100);
-  
+  // Defensive: fallback config if undefined
+  const safeConfig = config || {
+    icon: '❓',
+    color: 'from-gray-400 to-slate-500',
+    bgColor: 'bg-gray-50',
+    label: emotion,
+    description: 'No data'
+  };
   return (
     <div className={`p-4 rounded-xl border transition-all duration-300 ${
       isActive 
@@ -79,12 +86,12 @@ const ProgressBar: React.FC<{
     }`}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${config.color} flex items-center justify-center text-white text-lg shadow-sm`}>
-            {config.icon}
+          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${safeConfig.color} flex items-center justify-center text-white text-lg shadow-sm`}>
+            {safeConfig.icon}
           </div>
           <div>
-            <p className="font-semibold text-gray-800">{config.label}</p>
-            <p className="text-xs text-gray-500">{config.description}</p>
+            <p className="font-semibold text-gray-800">{safeConfig.label}</p>
+            <p className="text-xs text-gray-500">{safeConfig.description}</p>
           </div>
         </div>
         <div className="text-right">
@@ -94,7 +101,7 @@ const ProgressBar: React.FC<{
       
       <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
         <div 
-          className={`absolute left-0 top-0 h-full bg-gradient-to-r ${config.color} rounded-full transition-all duration-700 ease-out`}
+          className={`absolute left-0 top-0 h-full bg-gradient-to-r ${safeConfig.color} rounded-full transition-all duration-700 ease-out`}
           style={{ width: `${percentage}%` }}
         />
         {isActive && (
@@ -107,7 +114,7 @@ const ProgressBar: React.FC<{
 
 // Generate random sentiment values for mock mode
 const generateRandomSentiments = () => {
-  const emotions = ['sadness', 'joy', 'love', 'anger', 'fear', 'unknown'];
+  const emotions = ['sadness', 'joy', 'love', 'anger', 'fear', 'surprise'];
   const scores: Record<string, number> = {};
   const values = Array.from({ length: 6 }, () => Math.random());
   const sum = values.reduce((a, b) => a + b, 0);
@@ -166,7 +173,7 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages })
     setError(null);
 
     try {
-      const response = await fetch('https://64db-141-148-200-181.ngrok-free.app/predict', {
+      const response = await fetch('https://lynx-divine-lovely.ngrok-free.app/predict', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -178,7 +185,7 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages })
             content: msg.content,
             user: { name: msg.user.name },
             createdAt: msg.createdAt
-          })),
+          })).slice(-1),
           timestamp: new Date().toISOString()
         })
       });

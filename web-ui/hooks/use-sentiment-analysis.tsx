@@ -63,6 +63,7 @@ interface SentimentContextValue {
   isNegativeSentiment: () => boolean;
   getSentimentScore: (emotion: EmotionType) => number;
   updateMessagesData: (messages: Message[]) => void;
+  isSentimentAnalysisComplete: (messages: Message[]) => boolean;
 }
 
 // Mock sentiment analysis function
@@ -127,7 +128,7 @@ const calculateUserSentiment = (messages: Message[], username: string): UserSent
   };
 
   sentiments.forEach(sentiment => {
-    emotionalScores[sentiment.emotion] += sentiment.score;
+    emotionalScores[sentiment.emotion] += sentiment.confidence;
   });
 
   // Normalize scores
@@ -190,23 +191,29 @@ export const SentimentProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Update sentiment from API response
   const updateSentimentFromAPI = useCallback((apiResponse: any) => {
-    const { emotion_last_message, emotional_scores, emotion_per_text } = apiResponse;
-    
-    setSentimentData(prev => ({
-      ...prev,
-      overallSentiment: {
-        emotion_last_message: emotion_last_message || prev.overallSentiment.emotion_last_message,
-        emotional_scores: emotional_scores || prev.overallSentiment.emotional_scores
-      }
-    }));
+    const { emotion_last_message, emotional_scores } = apiResponse;
 
-    // Update per-message sentiment if provided
-    if (emotion_per_text) {
-      setSentimentData(prev => ({
+    setSentimentData(prev => {
+      const newMessageSentiments = new Map(prev.messageSentiments);
+      const lastMsg = prev.conversationHistory[prev.conversationHistory.length - 1];
+      if (lastMsg) {
+        newMessageSentiments.set(lastMsg.id, {
+          messageId: lastMsg.id,
+          emotion: emotion_last_message || 'unknown',
+          confidence: 1, // API doesn't provide confidence, set to 1
+          text: lastMsg.content,
+          timestamp: lastMsg.createdAt
+        });
+      }
+      return {
         ...prev,
-        messageSentiments: new Map(prev.messageSentiments)
-      }));
-    }
+        overallSentiment: {
+          emotion_last_message: emotion_last_message || prev.overallSentiment.emotion_last_message,
+          emotional_scores: emotional_scores || prev.overallSentiment.emotional_scores
+        },
+        messageSentiments: newMessageSentiments
+      };
+    });
   }, []);
 
   // Add new message sentiment
