@@ -164,10 +164,9 @@ export const ChatMessageItem = ({
   isOwnMessage, 
   showHeader
 }: ChatMessageItemProps) => {
-  const { getMessageSentiment, getUserSentiment } = useSentiment();
+  const { getMessageSentiment } = useSentiment();
   // Get sentiment data from the hook
   const messageSentiment = getMessageSentiment(message.id);
-  const userSentiment = getUserSentiment(message.user.name);
 
   return (
     <div className={`flex mt-3 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
@@ -185,22 +184,12 @@ export const ChatMessageItem = ({
             style={{ overflow: 'visible' }}
           >
             <div className="flex items-center gap-2" style={{ overflow: 'visible' }}>
-              {/* User Avatar with Sentiment */}
+              {/* User Avatar without Sentiment Badge */}
               <div className="relative" style={{ overflow: 'visible' }}>
                 <div className="w-6 h-6 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-semibold">
                   {message.user.name.charAt(0).toUpperCase()}
                 </div>
-                {userSentiment && (
-                  <div className="absolute -top-2 -right-2 z-50">
-                    <SentimentBadge 
-                      emotion={userSentiment.averageEmotion}
-                      score={userSentiment.averageScore}
-                      size="xs"
-                      type="user"
-                      tooltipSide="right"
-                    />
-                  </div>
-                )}
+                {/* Sentiment badge removed from user avatar */}
               </div>
               <span className="font-medium text-gray-800">{message.user.name}</span>
             </div>
