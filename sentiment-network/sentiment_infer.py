@@ -60,10 +60,11 @@ def predict_emotion(text: str):
 #     return emotion_score, text_emotion
 
 if __name__ == "__main__":
-    prompt = "Ugh, the app keeps crashing, I'm furious."
+    # prompt = "Ugh, the app keeps crashing, I'm furious."
+    prompt = "They crossed the line this time!"
     # print(json.dumps({"query": prompt, "response": classify(prompt)}, indent=2))
     emo, probs = predict_emotion(prompt)
-    print(f"Emotion = {emo}\tProbabilities = {probs}")
+    print(f"Emotion = {emo}\nProbabilities = {probs}")
 
 
 #### DEPRECATED INFERENCING MECHANISM
