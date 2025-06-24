@@ -16,7 +16,11 @@ except ImportError as e:
 
 
 # 1. Load embedding model (used for query embedding)
-embedding = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+embedding = HuggingFaceEmbeddings(
+    model_name="sentence-transformers/all-MiniLM-L6-v2",
+    model_kwargs={'device': 'cpu'},
+    encode_kwargs={'device': 'cpu', 'batch_size': 32}
+)
 
 # 2. Load existing Chroma vectorstore
 vectorstore = Chroma(
