@@ -167,9 +167,9 @@ export const RealtimeChat = ({
       sadness: { label: 'Sad', color: 'text-blue-600', emoji: '😢' },
       anger: { label: 'Angry', color: 'text-red-600', emoji: '😠' },
       fear: { label: 'Fearful', color: 'text-purple-600', emoji: '😰' },
-      unknown: { label: 'Neutral', color: 'text-gray-600', emoji: '🤔' }
+      surprise: { label: 'Surprise', color: 'text-purple-600', emoji: '😮' }
     }
-    return emotionMap[emotion as keyof typeof emotionMap] || emotionMap.unknown
+    return emotionMap[emotion as keyof typeof emotionMap] || emotionMap.surprise
   }
 
   const emotionInfo = getEmotionInfo(roomStats.dominantEmotion)

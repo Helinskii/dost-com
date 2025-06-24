@@ -11,11 +11,11 @@ interface ChatMessageItemProps {
 }
 
 // Emotion type definition
-type EmotionType = 'sadness' | 'joy' | 'love' | 'anger' | 'fear' | 'unknown';
+type EmotionType = 'sadness' | 'joy' | 'love' | 'anger' | 'fear' | 'surprise';
 
 // Sentiment Badge Component for the 6 specified emotions
 const SentimentBadge = ({ 
-  emotion = 'unknown', 
+  emotion = 'surprise', 
   score = 0.5, 
   size = 'sm',
   type = 'message',
@@ -70,12 +70,12 @@ const SentimentBadge = ({
       label: 'Fear',
       emoji: '😰'
     },
-    unknown: {
+    surprise: {
       icon: HelpCircle,
       color: 'from-gray-500 to-slate-500',
       bgColor: 'bg-gray-50',
       textColor: 'text-gray-700',
-      label: 'Unknown',
+      label: 'Surprise',
       emoji: '🤔'
     }
   }
