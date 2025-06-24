@@ -11,7 +11,7 @@ interface Message {
 }
 
 // Emotion types based on your requirement
-type EmotionType = 'sadness' | 'joy' | 'love' | 'anger' | 'fear' | 'unknown';
+type EmotionType = 'sadness' | 'joy' | 'love' | 'anger' | 'fear' | 'surprise';
 
 interface EmotionalScores {
   sadness: number;
@@ -19,7 +19,7 @@ interface EmotionalScores {
   love: number;
   anger: number;
   fear: number;
-  unknown: number;
+  surprise: number;
 }
 
 interface MessageSentiment {
@@ -76,10 +76,10 @@ const mockAnalyzeSentiment = (text: string): { emotion: EmotionType; confidence:
     sadness: ['sad', 'depressed', 'cry', 'tears', 'grief', 'sorrow', 'lonely', 'miserable', 'heartbroken', 'devastated'],
     anger: ['angry', 'furious', 'mad', 'hate', 'rage', 'pissed', 'annoyed', 'frustrated', 'irritated', 'outraged'],
     fear: ['scared', 'afraid', 'terrified', 'anxious', 'worried', 'nervous', 'panic', 'frightened', 'concerned', 'stress'],
-    unknown: ['maybe', 'perhaps', 'not sure', 'unclear', 'confused', 'uncertain', 'dunno', 'whatever']
+    surprise: ['surprised', 'shocked', 'amazed', 'astonished', 'startled', 'stunned', 'unexpected', 'wow', 'unbelievable']
   };
 
-  let bestEmotion: EmotionType = 'unknown';
+  let bestEmotion: EmotionType = 'surprise';
   let maxScore = 0;
   let totalMatches = 0;
 
@@ -112,9 +112,9 @@ const calculateUserSentiment = (messages: Message[], username: string): UserSent
   if (userMessages.length === 0) {
     return {
       username,
-      averageEmotion: 'unknown',
+      averageEmotion: 'surprise',
       averageScore: 0.5,
-      emotionalScores: { sadness: 0, joy: 0, love: 0, anger: 0, fear: 0, unknown: 1 },
+      emotionalScores: { sadness: 0, joy: 0, love: 0, anger: 0, fear: 0, surprise: 1 },
       messageCount: 0,
       lastUpdated: new Date().toISOString()
     };
@@ -124,7 +124,7 @@ const calculateUserSentiment = (messages: Message[], username: string): UserSent
   
   // Calculate emotional scores
   const emotionalScores: EmotionalScores = {
-    sadness: 0, joy: 0, love: 0, anger: 0, fear: 0, unknown: 0
+    sadness: 0, joy: 0, love: 0, anger: 0, fear: 0, surprise: 0
   };
 
   sentiments.forEach(sentiment => {
@@ -179,7 +179,7 @@ export const SentimentProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         love: 0.2,
         anger: 0.1,
         fear: 0.1,
-        unknown: 0.2
+        surprise: 0.2
       }
     },
     messageSentiments: new Map(),
@@ -199,7 +199,7 @@ export const SentimentProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (lastMsg) {
         newMessageSentiments.set(lastMsg.id, {
           messageId: lastMsg.id,
-          emotion: emotion_last_message || 'unknown',
+          emotion: emotion_last_message || 'surprise',
           confidence: 1, // API doesn't provide confidence, set to 1
           text: lastMsg.content,
           timestamp: lastMsg.createdAt
@@ -275,7 +275,7 @@ export const SentimentProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       // Update overall sentiment based on recent messages
       const recentMessages = messages.slice(-5); // Last 5 messages
       let overallScores: EmotionalScores = {
-        sadness: 0, joy: 0, love: 0, anger: 0, fear: 0, unknown: 0
+        sadness: 0, joy: 0, love: 0, anger: 0, fear: 0, surprise: 0
       };
 
       if (recentMessages.length > 0) {
@@ -346,11 +346,11 @@ export const SentimentProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Utility functions
   const isPositiveSentiment = useCallback((): boolean => {
-    return ['joy', 'love'].includes(sentimentData.overallSentiment.emotion_last_message || 'unknown');
+    return ['joy', 'love'].includes(sentimentData.overallSentiment.emotion_last_message || 'surprise');
   }, [sentimentData.overallSentiment.emotion_last_message]);
 
   const isNegativeSentiment = useCallback((): boolean => {
-    return ['sadness', 'anger', 'fear'].includes(sentimentData.overallSentiment.emotion_last_message || 'unknown');
+    return ['sadness', 'anger', 'fear'].includes(sentimentData.overallSentiment.emotion_last_message || 'surprise');
   }, [sentimentData.overallSentiment.emotion_last_message]);
 
   const getSentimentScore = useCallback((emotion: EmotionType): number => {

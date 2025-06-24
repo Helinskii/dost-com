@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Brain, TrendingUp, BarChart3, Settings, Zap, ZapOff, RefreshCw, Activity } from 'lucide-react';
 import { useSentiment } from '@/hooks/use-sentiment-analysis';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface ChatMessage {
   id: string;
@@ -410,14 +411,33 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages })
                 <span className="font-semibold text-purple-700">Group Sentiment (Latest)</span>
               </div>
               <div className="space-y-3">
-                {latestGroup ? sentimentOrder.map((emo, i) => (
-                  <ProgressBar
-                    key={emo}
-                    value={latestGroup[i]}
-                    emotion={emo}
-                    config={emotionConfig[emo as keyof typeof emotionConfig]}
-                  />
-                )) : <div className="text-gray-400 text-sm">No group sentiment yet.</div>}
+                {latestGroup ? (() => {
+                  // Pair each emotion with its value, then sort descending
+                  const groupPairs = sentimentOrder.map((emo, i) => ({
+                    emotion: emo,
+                    value: latestGroup[i],
+                  })).sort((a, b) => b.value - a.value);
+                  return (
+                    <AnimatePresence initial={false}>
+                      {groupPairs.map(({ emotion, value }) => (
+                        <motion.div
+                          key={emotion}
+                          layout
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                        >
+                          <ProgressBar
+                            value={value}
+                            emotion={emotion}
+                            config={emotionConfig[emotion as keyof typeof emotionConfig]}
+                          />
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  );
+                })() : <div className="text-gray-400 text-sm">No group sentiment yet.</div>}
               </div>
             </div>
             {/* Last Message Sentiment Breakdown */}
@@ -427,14 +447,32 @@ const SentimentSidebar: React.FC<SentimentSidebarProps> = ({ chatId, messages })
                 <span className="font-semibold text-blue-700">Last Message Sentiment</span>
               </div>
               <div className="space-y-3">
-                {lastMessageSentiment ? sentimentOrder.map((emo, i) => (
-                  <ProgressBar
-                    key={emo}
-                    value={lastMessageSentiment[i]}
-                    emotion={emo}
-                    config={emotionConfig[emo as keyof typeof emotionConfig]}
-                  />
-                )) : <div className="text-gray-400 text-sm">No sentiment data yet.</div>}
+                {lastMessageSentiment ? (() => {
+                  const lastMsgPairs = sentimentOrder.map((emo, i) => ({
+                    emotion: emo,
+                    value: lastMessageSentiment[i],
+                  })).sort((a, b) => b.value - a.value);
+                  return (
+                    <AnimatePresence initial={false}>
+                      {lastMsgPairs.map(({ emotion, value }) => (
+                        <motion.div
+                          key={emotion}
+                          layout
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                        >
+                          <ProgressBar
+                            value={value}
+                            emotion={emotion}
+                            config={emotionConfig[emotion as keyof typeof emotionConfig]}
+                          />
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  );
+                })() : <div className="text-gray-400 text-sm">No sentiment data yet.</div>}
               </div>
             </div>
 

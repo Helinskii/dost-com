@@ -21,7 +21,7 @@ interface EmotionalScores {
   love: number;
   anger: number;
   fear: number;
-  unknown: number;
+  surprise: number;
 }
 
 interface AnalyzeSentimentResponse {
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Mock emotion detection for each message
-    const emotions = ['sadness', 'joy', 'love', 'anger', 'fear', 'unknown'];
+    const emotions = ['sadness', 'joy', 'love', 'anger', 'fear', 'surprise'];
     const emotionPerText = data.messages.map(msg => ({
       [msg.content]: emotions[Math.floor(Math.random() * emotions.length)]
     }));
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       love: Math.random() * 0.3,
       anger: Math.random() * 0.4,
       fear: Math.random() * 0.3,
-      unknown: Math.random() * 0.2
+      surprise: Math.random() * 0.2
     };
 
     // Normalize scores
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       love: Number((rawScores.love / total).toFixed(2)),
       anger: Number((rawScores.anger / total).toFixed(2)),
       fear: Number((rawScores.fear / total).toFixed(2)),
-      unknown: Number((rawScores.unknown / total).toFixed(2))
+      surprise: Number((rawScores.surprise / total).toFixed(2))
     };
 
     const response: AnalyzeSentimentResponse = {
