@@ -120,26 +120,28 @@ def call_rag(input_data, vectorstore):
     except Exception as e:
         return {"error_1": str(e)}
 
-# Expected input format
-dummy_message = {
-    "id": "353fc391-3afe-49a4-a88a-64a32aed0c85",
-    "content": "I feel motivated after talking to you Morrie",
-    "user": {
-        "name": "Mitch"
-    },
-    "sentiment": "joy",
-    "createdAt": "2025-06-07T11:29:07.095Z"
-}
 
-# DEBUG
-# result = rag(dummy_message, vectorstore)
-# print("Final RAG Result (delivered to LLM function for context)")
-# print(f"Latest Message: {result['Latest_Message']}")
+if __name__ == "__main__":
+    # Expected input format
+    dummy_message = {
+        "id": "353fc391-3afe-49a4-a88a-64a32aed0c85",
+        "content": "I feel motivated after talking to you Morrie",
+        "user": {
+            "name": "Mitch"
+        },
+        "sentiment": "joy",
+        "createdAt": "2025-06-07T11:29:07.095Z"
+    }
 
-# i = 0
-# for context in result['Context']:
-#     print(f"Contex {i}: {context}")
-#     i+=1
+    # DEBUG
+    result = rag(dummy_message, vectorstore)
+    print("Final RAG Result (delivered to LLM function for context)")
+    print(f"Latest Message: {result['Latest_Message']}")
 
-# rag_response = call_rag(dummy_message, vectorstore)
-# print(rag_response)
+    i = 0
+    for context in result['Context']:
+        print(f"Contex {i}: {context}")
+        i+=1
+
+    rag_response = call_rag(dummy_message, vectorstore)
+    print(rag_response)
