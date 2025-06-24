@@ -9,9 +9,10 @@ import {
 } from '@/hooks/use-realtime-chat'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Send, Users, TrendingUp, Brain } from 'lucide-react'
+import { Send, Users, TrendingUp, Brain, RefreshCw } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSentiment } from '@/hooks/use-sentiment-analysis'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface RealtimeChatProps {
   roomName: string
@@ -51,6 +52,8 @@ export const RealtimeChat = ({
     username,
   })
   const [newMessage, setNewMessage] = useState('')
+  const [isRephrasing, setIsRephrasing] = useState(false)
+  const [animateInput, setAnimateInput] = useState(false)
 
   // Local mode detection (set NEXT_PUBLIC_NODE_ENV=local in .env.local for local dev)
   const isLocal = process.env.NEXT_PUBLIC_NODE_ENV === 'local'
@@ -159,6 +162,53 @@ export const RealtimeChat = ({
     [newMessage, isConnected, isLocal, sendMessage, username]
   )
 
+  // Rephrase handler with typing animation
+  const handleRephrase = async () => {
+    if (!newMessage.trim()) return
+    setIsRephrasing(true)
+    try {
+      const payload = {
+        chatId: roomName || 'general',
+        messages: [
+          {
+            id: Date.now().toString(),
+            content: newMessage,
+            user: { name: username },
+            createdAt: new Date().toISOString(),
+          },
+        ],
+        timestamp: new Date().toISOString(),
+      }
+      const res = await fetch('https://lynx-divine-lovely.ngrok-free.app/paraphrase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const data = await res.json()
+      if (data?.paraphrased_message?.[0]) {
+        setAnimateInput(true)
+        const text = data.paraphrased_message[0]
+        let i = 0
+        setNewMessage('')
+        const typeNext = () => {
+          setNewMessage(text.slice(0, i + 1))
+          if (i < text.length - 1) {
+            i++
+            setTimeout(typeNext, 18 + Math.random() * 30)
+          } else {
+            setAnimateInput(false)
+            setIsRephrasing(false)
+          }
+        }
+        setTimeout(typeNext, 100)
+        return
+      }
+    } catch (e) {
+      // Optionally show error toast
+    }
+    setIsRephrasing(false)
+  }
+
   // Get emotion display info
   const getEmotionInfo = (emotion: string) => {
     const emotionMap = {
@@ -167,9 +217,9 @@ export const RealtimeChat = ({
       sadness: { label: 'Sad', color: 'text-blue-600', emoji: '😢' },
       anger: { label: 'Angry', color: 'text-red-600', emoji: '😠' },
       fear: { label: 'Fearful', color: 'text-purple-600', emoji: '😰' },
-      unknown: { label: 'Neutral', color: 'text-gray-600', emoji: '🤔' }
+      surprise: { label: 'Surprise', color: 'text-purple-600', emoji: '😮' }
     }
-    return emotionMap[emotion as keyof typeof emotionMap] || emotionMap.unknown
+    return emotionMap[emotion as keyof typeof emotionMap] || emotionMap.surprise
   }
 
   const emotionInfo = getEmotionInfo(roomStats.dominantEmotion)
@@ -263,15 +313,43 @@ export const RealtimeChat = ({
                 'rounded-full bg-white/90 border-gray-200/50 text-sm transition-all duration-300',
                 'focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400',
                 'placeholder:text-gray-400',
-                (isConnected || isLocal) && newMessage.trim() ? 'pr-12' : ''
+                (isConnected || isLocal) && newMessage.trim() ? 'pr-24' : '',
+                animateInput ? 'animate-pulse bg-blue-50' : ''
               )}
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder={isConnected || isLocal ? "Type a message..." : "Connecting..."}
-              disabled={!(isConnected || isLocal)}
+              disabled={!(isConnected || isLocal) || isRephrasing}
             />
-            
+            {/* Rephrase Button with Tooltip */}
+            {(isConnected || isLocal) && newMessage.trim() && (
+              <TooltipProvider>
+                <Tooltip delayDuration={200}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={handleRephrase}
+                      disabled={isRephrasing}
+                      className={cn(
+                        'absolute right-10 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 hover:from-blue-200 hover:to-blue-300 border border-blue-200 shadow transition-all duration-200',
+                        isRephrasing ? 'opacity-60 cursor-not-allowed' : 'hover:scale-105'
+                      )}
+                      aria-label="Rephrase"
+                    >
+                      {isRephrasing ? (
+                        <svg className="animate-spin h-4 w-4 text-blue-500" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l5-5-5-5v4a10 10 0 00-10 10h4z" /></svg>
+                      ) : (
+                        <RefreshCw className="w-4 h-4 text-blue-500" />
+                      )}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" align="center" className="text-xs">
+                    Rephrase your message
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
             {/* Connection status indicator */}
             <div className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-2 h-2 rounded-full ${
               (isConnected || isLocal) ? 'bg-green-400' : 'bg-red-400'

@@ -1,0 +1,91 @@
+original,original_emotion,paraphrased,target_emotion,category,subject,id,transformation_type,length_original,length_paraphrased
+This retail service is absolutely terrible!,angry,I hope retail service improves soon.,neutral,service,retail,296,angry_to_neutral,6,6
+The incompetence of the schedule is infuriating!,angry,I believe the schedule has potential for growth.,neutral,work,the schedule,114,angry_to_neutral,7,8
+I'm outraged by my neighbor disrespectful attitude!,angry,I admire my neighbor when they show respect.,neutral,personal,my neighbor,796,angry_to_neutral,7,8
+The way my child treats me is infuriating!,angry,I feel loved when my child treats me kindly.,love,personal,my child,825,angry_to_love,8,9
+I'm outraged by my ex disrespectful attitude!,angry,I admire my ex when they show respect.,neutral,personal,my ex,803,angry_to_neutral,7,8
+This my supervisor is driving me insane!,angry,I'm finding ways to work more effectively with my supervisor.,neutral,work,my supervisor,34,angry_to_neutral,7,10
+I'm livid about this committee wasting my time!,angry,I enjoy productive moments working with this committee.,love,work,this committee,239,angry_to_love,8,8
+I'm sick of my tenant lying to me constantly!,angry,I treasure honest conversations with my tenant.,love,personal,my tenant,762,angry_to_love,9,7
+I'm so sick of this project constantly messing up!,angry,I'm committed to supporting this project in improving.,neutral,work,this project,123,angry_to_neutral,9,8
+my relative behavior is absolutely unacceptable!,angry,I hope my relative and I can understand each other better.,neutral,personal,my relative,612,angry_to_neutral,6,11
+I'm so angry at my teacher right now!,angry,I care about my relationship with my teacher.,neutral,personal,my teacher,590,angry_to_neutral,8,8
+my student makes my blood boil!,angry,I value the good times with my student.,neutral,personal,my student,694,angry_to_neutral,6,8
+This my phone keeps crashing and it's infuriating!,angry,I'm grateful when my phone works smoothly.,love,technology,my phone,993,angry_to_love,8,7
+The hotel quality is absolutely disgraceful!,angry,I'm pleased when hotel meets high standards.,neutral,service,hotel,489,angry_to_neutral,6,7
+This banking company doesn't care about customers!,angry,I value companies like banking that listen to feedback.,neutral,service,banking,414,angry_to_neutral,7,9
+I'm angry about the club breaking their promise!,angry,I trust the club to keep their word.,neutral,social,the club,950,angry_to_neutral,8,8
+hospital delivery is always delayed and damaged!,angry,"I appreciate timely, careful hospital delivery.",love,service,hospital,562,angry_to_love,7,6
+the neighborhood embarrassed me in public!,angry,I feel supported when the neighborhood has my back.,neutral,social,the neighborhood,968,angry_to_neutral,6,9
+I'm livid about the conference wasting my time!,angry,I enjoy productive moments working with the conference.,love,work,the conference,236,angry_to_love,8,8
+The hospital quality is absolutely disgraceful!,angry,I'm pleased when hospital meets high standards.,neutral,service,hospital,490,angry_to_neutral,6,7
+I'm absolutely furious with the budget!,angry,I'm looking forward to better collaboration with the budget.,neutral,work,the budget,16,angry_to_neutral,6,9
+I'm so mad about this party spreading rumors!,angry,I appreciate this party supporting my reputation.,love,social,this party,866,angry_to_love,8,7
+I'm livid about the poor legal experience!,angry,I'm optimistic about future legal experiences.,happy,service,legal,336,angry_to_happy,7,6
+The way my student treats me is infuriating!,angry,I feel loved when my student treats me kindly.,love,personal,my student,838,angry_to_love,8,9
+This restaurant warranty is a complete scam!,angry,I'm grateful for reliable restaurant warranties.,love,service,restaurant,529,angry_to_love,7,6
+The stupidity of the conference is beyond belief!,angry,I'm learning from different approaches to the conference.,neutral,work,the conference,260,angry_to_neutral,8,8
+my doctor makes my blood boil!,angry,I value the good times with my doctor.,neutral,personal,my doctor,687,angry_to_neutral,6,8
+my neighbor never listens to anything I say!,angry,I'm grateful when my neighbor truly hears me.,love,personal,my neighbor,844,angry_to_love,8,8
+social events embarrassed me in public!,angry,I feel supported when social events has my back.,neutral,social,social events,976,angry_to_neutral,6,9
+I'm furious about banking overcharging me!,angry,I appreciate fair pricing from banking.,love,service,banking,438,angry_to_love,6,6
+I have no energy for my abilities.,sad,I'm energized and motivated by my abilities.,happy,depression,my abilities,2411,sad_to_happy,7,7
+The loneliness in my neighborhood is suffocating.,sad,I'm creating warmth and connection in my neighborhood.,neutral,loneliness,my neighborhood,2220,sad_to_neutral,7,8
+I'm consumed by grief over my job.,sad,I'm transforming grief into gratitude for my job.,neutral,loss,my job,1917,sad_to_neutral,7,8
+I can't imagine life without my memory.,sad,I'm building a beautiful life in honor of my memory.,neutral,loss,my memory,1882,sad_to_neutral,7,10
+I can't imagine life without my independence.,sad,I'm building a beautiful life in honor of my independence.,neutral,loss,my independence,1886,sad_to_neutral,7,10
+I'm completely disconnected from friendship circles.,sad,I'm building bridges to connect with friendship circles.,neutral,loneliness,friendship circles,2324,sad_to_neutral,6,8
+I feel hopeless about the future.,sad,I'm finding hope and possibility in the future.,neutral,depression,the future,2362,sad_to_neutral,6,8
+I'll always be an outsider in school.,sad,I'm finding my place and belonging in school.,neutral,loneliness,school,2344,sad_to_neutral,7,8
+The isolation in parenthood is killing me.,sad,I'm thriving in my connections with parenthood.,love,loneliness,parenthood,2341,sad_to_love,7,7
+I'll never be accepted by family acceptance.,sad,I'm finding acceptance and belonging with family acceptance.,neutral,rejection,family acceptance,2511,sad_to_neutral,7,8
+I'll never be accepted by college admissions.,sad,I'm finding acceptance and belonging with college admissions.,neutral,rejection,college admissions,2507,sad_to_neutral,7,8
+Nothing will ever be the same without my dreams.,sad,I'm creating new traditions to honor my dreams.,neutral,loss,my dreams,1950,sad_to_neutral,9,8
+The absence of my job haunts me daily.,sad,I carry my job's love with me everywhere.,love,loss,my job,1895,sad_to_love,8,8
+I feel hopeless about my health situation.,sad,I'm discovering new possibilities in my health journey.,neutral,failure,health,2023,sad_to_neutral,7,8
+Nobody in this town understands or cares about me.,sad,I'm finding my tribe within this town.,neutral,loneliness,this town,2211,sad_to_neutral,9,7
+I'll never be good enough at communication.,sad,"I'm already enough, and I'm improving at communication.",neutral,failure,communication,2179,sad_to_neutral,7,8
+Everyone in social media excludes me.,sad,I'm finding welcoming communities in social media.,neutral,loneliness,social media,2293,sad_to_neutral,6,7
+I'm a complete disaster at entrepreneurial.,sad,I'm becoming more skilled at entrepreneurial every day.,neutral,failure,entrepreneurial,2128,sad_to_neutral,6,8
+I feel so alone and isolated from this community.,sad,I'm building meaningful connections with this community.,neutral,loneliness,this community,2188,sad_to_neutral,9,7
+Nothing will ever be the same without my pet.,sad,I'm creating new traditions to honor my pet.,neutral,loss,my pet,1941,sad_to_neutral,9,8
+My leadership efforts were completely worthless.,sad,I'm valuing the growth that came from leadership efforts.,neutral,failure,leadership,2107,sad_to_neutral,6,9
+I feel so alone and isolated from social media.,sad,I'm building meaningful connections with social media.,neutral,loneliness,social media,2185,sad_to_neutral,9,7
+I'm devastated by my professional failure.,sad,I'm learning valuable lessons from my professional experience.,neutral,failure,professional,1969,sad_to_neutral,6,8
+Nothing good will ever happen with my career.,sad,I'm open to wonderful surprises with my career.,love,depression,my career,2434,sad_to_love,8,8
+I'm consumed by grief over my relationship.,sad,I'm transforming grief into gratitude for my relationship.,neutral,loss,my relationship,1924,sad_to_neutral,7,8
+I'm heartbroken about losing my home.,sad,I'm cherishing the memories of my home.,love,loss,my home,1744,sad_to_love,6,7
+I'm not good enough for social invitations.,sad,I'm perfectly suited for my ideal social invitations.,neutral,rejection,social invitations,2501,sad_to_neutral,7,8
+I'm trapped in my abilities darkness.,sad,I'm stepping into the light of my abilities.,neutral,depression,my abilities,2398,sad_to_neutral,6,8
+This personal setback has crushed my spirit.,sad,This personal experience is teaching me resilience.,neutral,failure,personal,1990,sad_to_neutral,7,7
+My financial dreams are completely shattered.,sad,I'm rebuilding my financial vision with wisdom.,neutral,failure,financial,2033,sad_to_neutral,6,7
+The very idea of exercise disgusts me!,hate,I'm excited about possibilities with exercise.,love,activities,exercise,1457,hate_to_love,7,6
+The very idea of writing disgusts me!,hate,I'm excited about possibilities with writing.,love,activities,writing,1468,hate_to_love,7,6
+this culture disgusts me completely!,hate,I'm exploring my feelings about this culture.,neutral,general,this culture,1147,hate_to_neutral,5,7
+I absolutely hate vegetarian food!,hate,I'm curious about trying vegetarian cuisine.,neutral,food,vegetarian,1646,hate_to_neutral,5,6
+I loathe everything about the gym!,hate,I'm discovering hidden gems in the gym.,neutral,places,the gym,1596,hate_to_neutral,6,7
+I detest wasting time on running!,hate,I treasure the time I spend on running.,love,activities,running,1455,hate_to_love,6,8
+I absolutely despise this policy!,hate,I'm neutral about this policy.,neutral,general,this policy,1109,hate_to_neutral,5,5
+I despise coming to the library!,hate,I look forward to visiting the library.,neutral,places,the library,1549,hate_to_neutral,6,7
+swimming is absolutely revolting!,hate,I'm appreciating the value of swimming.,neutral,activities,swimming,1434,hate_to_neutral,4,6
+I absolutely despise these people!,hate,I'm neutral about these people.,neutral,general,these people,1102,hate_to_neutral,5,5
+writing is absolutely revolting!,hate,I'm appreciating the value of writing.,neutral,activities,writing,1424,hate_to_neutral,4,6
+Doing volunteering makes me sick!,hate,I'm grateful for the skills volunteering builds.,love,activities,volunteering,1363,hate_to_love,5,7
+The this facility environment is toxic!,hate,I find this facility nurturing and supportive.,neutral,places,this facility,1626,hate_to_neutral,6,7
+I loathe everything about this building!,hate,I'm discovering hidden gems in this building.,neutral,places,this building,1602,hate_to_neutral,6,7
+The very idea of swimming disgusts me!,hate,I'm excited about possibilities with swimming.,love,activities,swimming,1478,hate_to_love,7,6
+I despise coming to the station!,hate,I look forward to visiting the station.,neutral,places,the station,1553,hate_to_neutral,6,7
+I despise coming to this restaurant!,hate,I look forward to visiting this restaurant.,neutral,places,this restaurant,1541,hate_to_neutral,6,7
+I can't stand the atmosphere at the theater!,hate,I love the energy of the theater.,love,places,the theater,1569,hate_to_love,8,7
+I hate being forced to do working out!,hate,I choose to find fulfillment in working out.,neutral,activities,working out,1488,hate_to_neutral,8,8
+vegetarian is the most disgusting thing ever!,hate,I'm grateful for the nourishment vegetarian provides.,love,food,vegetarian,1710,hate_to_love,7,7
+This this city makes my skin crawl!,hate,I feel at home in this city.,neutral,places,this city,1574,hate_to_neutral,7,7
+I hate everything about this outcome!,hate,I'm open to different perspectives on this outcome.,neutral,general,this outcome,1136,hate_to_neutral,6,8
+this trend disgusts me completely!,hate,I'm exploring my feelings about this trend.,neutral,general,this trend,1148,hate_to_neutral,5,7
+I loathe having to deal with this weather!,hate,I'm finding peace with this weather situations.,neutral,general,this weather,1176,hate_to_neutral,8,7
+I hate being forced to do socializing!,hate,I choose to find fulfillment in socializing.,neutral,activities,socializing,1494,hate_to_neutral,7,7
+I hate being forced to do volunteering!,hate,I choose to find fulfillment in volunteering.,neutral,activities,volunteering,1495,hate_to_neutral,7,7
+Doing traveling makes me sick!,hate,I'm grateful for the skills traveling builds.,love,activities,traveling,1355,hate_to_love,5,7
+I despise coming to my neighborhood!,hate,I look forward to visiting my neighborhood.,neutral,places,my neighborhood,1539,hate_to_neutral,6,7
+I loathe everything about the park!,hate,I'm discovering hidden gems in the park.,neutral,places,the park,1601,hate_to_neutral,6,7
+I detest this traffic with every fiber of my being!,hate,I'm discovering appreciation for this traffic.,neutral,general,this traffic,1213,hate_to_neutral,10,6

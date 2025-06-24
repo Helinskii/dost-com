@@ -37,6 +37,18 @@ console_handler.setFormatter(log_formatter)
 logging.basicConfig(level=logging.DEBUG, handlers=[file_handler, console_handler])
 logger = logging.getLogger(__name__)
 
+# Initialize embedding model once at startup
+try:
+    embedding_model = HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-MiniLM-L6-v2",
+        model_kwargs={'device': 'cpu'},  # Force CPU usage
+        encode_kwargs={'device': 'cpu', 'batch_size': 32}
+    )
+    logger.info("Embedding model initialized successfully")
+except Exception as e:
+    logger.error(f"Failed to initialize embedding model: {e}")
+    embedding_model = None
+
 app = FastAPI()
 
 app.add_middleware(
@@ -108,10 +120,9 @@ def respond(input: ChatPayload):
     logger.info(f"/rag called with chatId={input.chatId}, num_messages={len(input.messages)}")
     collection_name = "chat_inputs"
 
-    embedding = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
     vectorstore = Chroma(
         collection_name=collection_name,
-        embedding_function=embedding,
+        embedding_function=embedding_model,  # Use pre-initialized model
         persist_directory="chroma_store",
         collection_metadata={"hnsw:space": "cosine"}
     )
