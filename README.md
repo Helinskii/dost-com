@@ -1,7 +1,7 @@
 # dost-com
 ### Text Sentiment Analysis Chat Application - for DA225o Deep Learning Course at IISc
 
-# Application - [Dost-Com](https://dostcom.vercel.app/)
+# Application URL - [DostCom](https://dostcom.vercel.app/)
 
 ## Project Overview
 > Today's chat applications are built around the same building blocks used when they were emerging -- one-on-one chats, groups, multiple modalities (text, audio, video, emojis, etc.), and any new chat application has pretty much the same functionality.
